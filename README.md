@@ -101,3 +101,12 @@ The default settlement address `0x5e77…5E77` is the fixed address that the for
 ## License
 MIT, matching quantum-portfolio. `zk-batch/vendor/keccak` keeps its upstream MIT/Apache-2.0 licences.
 
+
+## Settling a real proof on a live devnet
+1. Deploy a stack wired to a real SP1 Groth16 verifier and the vkey from the prove artifact (`vkey.txt`):
+   `POOL=… VERIFIER=… BATCH_VKEY=… PK_A=… PK_B=… forge script script/DeployLiveV2.s.sol --broadcast --gas-estimate-multiplier 300 …`
+2. Run the `prove` workflow with that `settlement`, `chain_id`, `batch_id`, and a `nonce_base` above the agents' on-chain `lastNonce`.
+3. When the artifact arrives: `cd contracts && SETTLEMENT=0x… python3 settle_proof.py path/to/groth16-batch-fixture.json`.
+   The script first checks chain, settlement, vkey, digest and nonces (`--dry-run` stops after `eth_estimateGas`), then sends with gas limit = estimate.
+
+Current Solonet deployment and the planned batches: `contracts/measurements/live-deployment.json`.

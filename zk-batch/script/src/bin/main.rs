@@ -134,7 +134,7 @@ fn main() {
             "proof": format!("0x{}", hex::encode(proof.bytes())),
             "digest": format!("0x{}", hex::encode(expected)),
             "batch": format!("0x{}", hex::encode(&batch)),
-            "n": n, "chainId": a.chain_id, "settlement": format!("0x{}", hex::encode(settlement)), "batchId": a.batch_id,
+            "n": n, "chainId": a.chain_id, "settlement": format!("0x{}", hex::encode(settlement)), "batchId": a.batch_id, "nonceBase": a.nonce_base,
             "note": "Real SP1 Groth16 proof of the zk-batch v2 guest over a batch signed with deterministic TEST keys.",
         });
         std::fs::write(format!("{}/groth16-batch-fixture.json", a.proof_dir),

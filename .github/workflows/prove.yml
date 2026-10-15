@@ -25,6 +25,10 @@ on:
         description: "Batch id bound into the digest"
         required: true
         default: "1"
+      nonce_base:
+        description: "Nonce base: agent 1's first nonce = base+1, agent 2's = base+ceil(N/2)+1 (must exceed on-chain lastNonce)"
+        required: true
+        default: "0"
 
 permissions:
   contents: read
@@ -81,7 +85,7 @@ jobs:
         run: |
           ./target/release/vkey | tee vkey.txt
           ./target/release/batch --execute -n "${{ inputs.n }}" --chain-id "${{ inputs.chain_id }}" \
-            --settlement "${{ inputs.settlement }}" --batch-id "${{ inputs.batch_id }}" | grep -E "RESULT|exit_code|^N="
+            --settlement "${{ inputs.settlement }}" --batch-id "${{ inputs.batch_id }}" --nonce-base "${{ inputs.nonce_base }}" | grep -E "RESULT|exit_code|^N="
 
       - name: Prove (Groth16, local CPU prover)
         working-directory: zk-batch
@@ -90,7 +94,7 @@ jobs:
           cp vkey.txt proof-out/
           ( while true; do sleep 300; echo "[mem $(date -u +%H:%M)] $(free -m | awk '/Mem/{print "ram used "$3"M"} /Swap/{print "swap used "$3"M"}' | tr '\n' ' ')"; done ) &
           /usr/bin/time -v ./target/release/batch --prove -n "${{ inputs.n }}" --chain-id "${{ inputs.chain_id }}" \
-            --settlement "${{ inputs.settlement }}" --batch-id "${{ inputs.batch_id }}" \
+            --settlement "${{ inputs.settlement }}" --batch-id "${{ inputs.batch_id }}" --nonce-base "${{ inputs.nonce_base }}" \
             --proof-dir proof-out --out proof-out/batch.json 2>&1 | tee proof-out/prove.log
           test "${PIPESTATUS[0]}" = "0"
 
@@ -98,7 +102,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: groth16-batch-n${{ inputs.n }}
+          name: groth16-batch-n${{ inputs.n }}-b${{ inputs.batch_id }}
           path: |
             zk-batch/proof-out/
           if-no-files-found: warn
