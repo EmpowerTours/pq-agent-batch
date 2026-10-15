@@ -14,11 +14,11 @@ on:
         required: true
         default: "10"
       settlement:
-        description: "Settlement address bound into the digest (default = fixed test address used by forge tests)"
+        description: "Settlement address bound into the digest (default = fixed address used by the forge parity tests)"
         required: true
         default: "5e77000000000000000000000000000000005E77"
       chain_id:
-        description: "Chain id bound into the digest (20143 = Monad testnet / Solonet)"
+        description: "Chain id bound into the digest (20143 = local Monad Solonet devnet)"
         required: true
         default: "20143"
       batch_id:

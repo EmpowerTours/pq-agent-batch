@@ -1,0 +1,116 @@
+{
+  "note": "Real SP1 Groth16 batch proofs (prove.yml on free GitHub runners) settled on a LOCAL Monad devnet (Solonet). Devnet only; tx hashes are local to that devnet and not on any public explorer.",
+  "network": "local Monad Solonet (devnet)",
+  "chainId": 20143,
+  "contracts": {
+    "verifier": "0x1C033Aa9B45bdb63A18208ed0FbF0F442B5886Fd",
+    "verifierNote": "fresh copy of the SP1 v6 Groth16 verifier runtime (VERIFIER_HASH 0x4388a21c..., VERSION v6.1.0; same Groth16 circuit as SP1 6.3.1 proofs)",
+    "registry": "0x0027b25cdE0258C3134d8e9cD77a92da146Ff431",
+    "settlement": "0x46658F507877C3Ec5180De4D60cdbb41A846Ab3e",
+    "pool": "0x0C8E79F3534B00D9a3D4a856B665Bf4eBC22f2ba",
+    "batchVKey": "0x0020ed358e42b85560d3f4114c57cd2b767e130766caf8bcaec7842799fd7d9d"
+  },
+  "testAgents": {
+    "note": "pkHash = sha256(ML-DSA-65 public key) of deterministic TEST keys derived from public seeds",
+    "1": "0x8b1551c421b573beeaebb39debb1e0371e13c93155a7a5be60b29dd691095b05",
+    "2": "0x62d3462f41b0be23edd19e0aa7477bf95edcf207d9d325ddd73298cb14a946e3"
+  },
+  "settlements": [
+    {
+      "batchId": 1,
+      "n": 10,
+      "nonceBase": 0,
+      "agent1Nonces": "1..5",
+      "agent2Nonces": "6..10",
+      "digest": "0xbfb669f4e723f4717d8c1041faec9860f40c08ff4465ccb2c200d8a96ddea12c",
+      "fixture": "results/solonet/b1-n10/groth16-batch-fixture.json",
+      "proveRun": "https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38787797233",
+      "tx": "0x283d9402524657fd60ede01e33ec7a5993c9f1ea2132b98caf382a5549256431",
+      "block": 68749,
+      "status": 1,
+      "gasLimit": 1315406,
+      "gasUsed": 1315406,
+      "gasPerOrder": 131540.6,
+      "calldataBytes": 964,
+      "calldataGas_16_4": 10132,
+      "topLevelCalls": [
+        {
+          "to": "0x0027b25cde0258c3134d8e9cd77a92da146ff431",
+          "gasUsed": 17301
+        },
+        {
+          "to": "0x0027b25cde0258c3134d8e9cd77a92da146ff431",
+          "gasUsed": 17301
+        },
+        {
+          "to": "0x1c033aa9b45bdb63a18208ed0fbf0f442b5886fd",
+          "gasUsed": 1063693
+        },
+        {
+          "to": "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+          "gasUsed": 8340
+        },
+        {
+          "to": "0xe1aa25618fa0c7a1cfdab5d6b456af611873b629",
+          "gasUsed": 24517
+        },
+        {
+          "to": "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+          "gasUsed": 58754
+        }
+      ]
+    },
+    {
+      "batchId": 2,
+      "n": 100,
+      "nonceBase": 5,
+      "agent1Nonces": "6..55",
+      "agent2Nonces": "56..105",
+      "digest": "0x3e9b3849782b25fd587ab1f4e4fa26bed0e7b26ec1ec2cfec010d918e8a04d5b",
+      "fixture": "results/solonet/b2-n100/groth16-batch-fixture.json",
+      "proveRun": "https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38787815547",
+      "tx": "0x7c4f54d8f09abd5d9e4fa4b50aeccb4d72d3c9cb7787b04a0e5c10c6bb740c28",
+      "block": 88653,
+      "status": 1,
+      "gasLimit": 1379924,
+      "gasUsed": 1379924,
+      "gasPerOrder": 13799.2,
+      "calldataBytes": 3236,
+      "calldataGas_16_4": 27812,
+      "topLevelCalls": [
+        {
+          "to": "0x0027b25cde0258c3134d8e9cd77a92da146ff431",
+          "gasUsed": 17301
+        },
+        {
+          "to": "0x0027b25cde0258c3134d8e9cd77a92da146ff431",
+          "gasUsed": 17301
+        },
+        {
+          "to": "0x1c033aa9b45bdb63a18208ed0fbf0f442b5886fd",
+          "gasUsed": 1063693
+        },
+        {
+          "to": "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+          "gasUsed": 8340
+        },
+        {
+          "to": "0xe1aa25618fa0c7a1cfdab5d6b456af611873b629",
+          "gasUsed": 24517
+        },
+        {
+          "to": "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+          "gasUsed": 58754
+        }
+      ]
+    }
+  ],
+  "finalAgentState": {
+    "1": {
+      "lastNonce": 55
+    },
+    "2": {
+      "lastNonce": 105
+    }
+  }
+}

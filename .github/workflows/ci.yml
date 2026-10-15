@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   forge:
-    name: Foundry tests (v1 + v2 settlement, fuzz)
+    name: Foundry tests (settlement, fuzz, real Groth16 proofs)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

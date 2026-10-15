@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Settle a REAL proof produced by .github/workflows/prove.yml on a Monad node.
 
-usage: python3 settle_proof.py <groth16-batch-fixture.json> [--dry-run]
+usage: python3 contracts/script/settle_proof.py <groth16-batch-fixture.json> [--dry-run]
 env:   RPC (default http://localhost:8080), SETTLEMENT (must equal the fixture's bound address),
        KEY_FILE (devnet key, never committed; default ~/.solonet-test.pk)
 
@@ -9,6 +9,7 @@ Checks before sending: chain id, settlement address, contract vkey == fixture vk
 contract batchDigest(batchId, batch) == fixture digest == publicValues, and that every
 agent group's firstNonce is above the on-chain lastNonce. Then eth_estimateGas and send
 with gas limit = estimate (Monad charges the limit), and print a callTracer breakdown.
+Each settlement is appended to results/solonet/settlements.jsonl.
 """
 import json, os, sys, time, urllib.request
 from eth_abi import encode, decode
@@ -70,6 +71,7 @@ res = dict(label=f"REAL-N{fx['n']}-live", N=fx["n"], batchId=bid, tx=txh, status
            receipt_gasUsed=used, per_order=used / fx["n"], calldata_bytes=nz + z, calldata_gas_16_4=16 * nz + 4 * z,
            top_level_frames=frames, vkey=fx["vkey"], settlement=bs)
 print(json.dumps(res, indent=1))
-os.makedirs("measurements", exist_ok=True)
-with open("measurements/results.jsonl", "a") as f: f.write(json.dumps(res) + "\n")
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "results", "solonet", "settlements.jsonl")
+os.makedirs(os.path.dirname(out), exist_ok=True)
+with open(out, "a") as f: f.write(json.dumps(res) + "\n")
 sys.exit(0 if st == 1 else 1)

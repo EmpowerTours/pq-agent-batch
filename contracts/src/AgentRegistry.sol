@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 /// @title  AgentRegistry
-/// @notice Who may trade through BatchSettlement, with which post-quantum keys,
+/// @notice Who may trade through BatchSettlementV2, with which post-quantum keys,
 ///         and how much per batch.
 /// @dev    Milestone scope: permissioned registration by `admin`. Each agent has
 ///         a set of ML-DSA-65 key commitments (SHA-256 of the encoded public

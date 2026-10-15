@@ -9,8 +9,8 @@ import { ISP1Verifier } from "./interfaces/ISP1Verifier.sol";
 import { AgentRegistry } from "./AgentRegistry.sol";
 import { MiniAMM } from "./dex/MiniAMM.sol";
 
-/// @title  BatchSettlementV2 (packed batches), stage S6
-/// @notice Same semantics as BatchSettlement, with a packed batch encoding:
+/// @title  BatchSettlementV2: one SP1 Groth16 proof settles a batch of ML-DSA-65 signed agent orders
+/// @notice Packed batch encoding (v2):
 ///
 ///   batch := group+                          (no trailing bytes)
 ///   group := agentId u32 | count u16 | firstNonce u64 | expiry u32 | pkHash b32 | modelHash b32   (82 B)

@@ -5,8 +5,8 @@ contracts/cache/
 contracts/broadcast/
 # dependencies are installed (pinned) by CI / `forge install`, not vendored
 contracts/lib
-# generated calldata from measure.py / BuildBatch scripts
-contracts/measurements/calldata_*.hex
+# raw prove-workflow downloads (curated fixtures live in results/)
+runs/
 # proof outputs
 zk-batch/proof-out/
 **/proof-out/
@@ -19,3 +19,9 @@ zk-batch/proof-out/
 .env.*
 **/secrets/
 *.solonet-test.pk
+# local tooling / OS noise
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.idea/

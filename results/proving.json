@@ -1,0 +1,25 @@
+{
+  "note": "Wall time and peak RSS of the Prove step (`/usr/bin/time -v`, SP1 6.3.1, SP1_PROVER=cpu, local gnark Groth16 wrap via docker) on free GitHub-hosted ubuntu-latest runners (16 GB RAM + 32 GB swap added by the workflow). No prover network.",
+  "runs": [
+    {
+      "n": 10,
+      "batchId": 1,
+      "run": "https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38787797233",
+      "commit": "361d5ec",
+      "proveWallClock": "46:49",
+      "maxRSS_kB": 15412804,
+      "maxRSS_GiB": 14.7,
+      "userCpuSeconds": 8844.63
+    },
+    {
+      "n": 100,
+      "batchId": 2,
+      "run": "https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38787815547",
+      "commit": "361d5ec",
+      "proveWallClock": "2:45:22",
+      "maxRSS_kB": 15570944,
+      "maxRSS_GiB": 14.85,
+      "userCpuSeconds": 29007.3
+    }
+  ]
+}
