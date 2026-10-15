@@ -73,7 +73,7 @@ cargo build --release
 ./target/release/batch --execute -n 100        # cycle count
 ./target/release/batch --execute -n 4 --tamper # must be rejected (exit 2)
 ```
-CI (`.github/workflows/ci.yml`) runs all of this on every push.
+CI (`.github/workflows/ci.yml`) runs all of this on every push. *(Workflow files pending: see note at the bottom.)*
 
 ## Generate a real Groth16 proof (GitHub Actions)
 `.github/workflows/prove.yml`. Trigger it from **Actions → prove → Run workflow**, or with `gh workflow run prove.yml -f n=10`.
@@ -100,3 +100,6 @@ The default settlement address `0x5e77…5E77` is the fixed address that the for
 
 ## License
 MIT, matching quantum-portfolio. `zk-batch/vendor/keccak` keeps its upstream MIT/Apache-2.0 licences.
+
+## Note: workflow files pending
+`.github/workflows/ci.yml` and `prove.yml` are written and committed on the local `with-workflows` branch, but they are not in this repo yet. The push token used to create the repo lacks GitHub's `workflow` OAuth scope, and GitHub refuses workflow files without it.
