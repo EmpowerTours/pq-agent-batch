@@ -1,0 +1,5 @@
+[toolchain]
+# Pinned, not "stable": the guest ELF hash IS the on-chain vkey, so a moving
+# toolchain silently changes the identity of the deployed program.
+channel = "1.90.0"
+components = ["llvm-tools", "rustc-dev"]

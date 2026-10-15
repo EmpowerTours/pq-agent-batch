@@ -1,0 +1,9 @@
+[package]
+name = "agent-batch-lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+alloy-primitives = { workspace = true }
+ml-dsa = "0.1.1"
+sha2 = "0.10"

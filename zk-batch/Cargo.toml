@@ -1,0 +1,12 @@
+[workspace]
+members = ["lib", "program", "script"]
+resolver = "2"
+
+[workspace.dependencies]
+alloy-sol-types = "*"
+alloy-primitives = "1"
+
+# SP1 precompile acceleration for ml-dsa's SHAKE (shake -> keccak crate),
+# copied from quantum-portfolio/zk-mldsa.
+[patch.crates-io]
+keccak = { path = "vendor/keccak" }

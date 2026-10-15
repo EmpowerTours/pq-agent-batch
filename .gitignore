@@ -1,0 +1,21 @@
+# build artifacts
+**/target/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+# dependencies are installed (pinned) by CI / `forge install`, not vendored
+contracts/lib
+# generated calldata from measure.py / BuildBatch scripts
+contracts/measurements/calldata_*.hex
+# proof outputs
+zk-batch/proof-out/
+**/proof-out/
+# secrets: never commit keys or env files
+*.pk
+.pk
+*.key
+*.pem
+.env
+.env.*
+**/secrets/
+*.solonet-test.pk
