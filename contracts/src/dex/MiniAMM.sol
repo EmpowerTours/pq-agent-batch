@@ -85,6 +85,7 @@ contract MiniAMM is ERC20, ReentrancyGuard {
         address to
     ) external nonReentrant returns (uint256 amount0, uint256 amount1, uint256 liquidity) {
         (uint112 r0, uint112 r1) = getReserves();
+        // slither-disable-next-line incorrect-equality (audit S-03: exact-zero reserve checks are intended)
         if (r0 == 0 && r1 == 0) {
             // First deposit sets the price.
             amount0 = amount0Desired;
@@ -95,6 +96,7 @@ contract MiniAMM is ERC20, ReentrancyGuard {
                 amount0 = amount0Desired;
                 amount1 = amount1Optimal;
             } else {
+                // slither-disable-next-line divide-before-multiply (audit S-04: Uniswap V2 quote rounding, favours the pool)
                 uint256 amount0Optimal = (amount1Desired * r0) / r1;
                 amount0 = amount0Optimal;
                 amount1 = amount1Desired;
@@ -131,6 +133,7 @@ contract MiniAMM is ERC20, ReentrancyGuard {
         uint256 bal1 = token1.balanceOf(address(this));
         amount0 = (liquidity * bal0) / _totalSupply;
         amount1 = (liquidity * bal1) / _totalSupply;
+        // slither-disable-next-line incorrect-equality
         if (amount0 == 0 || amount1 == 0) revert ZeroLiquidity();
         _burn(msg.sender, liquidity);
         token0.safeTransfer(to, amount0);
@@ -158,6 +161,7 @@ contract MiniAMM is ERC20, ReentrancyGuard {
         uint256 amount1In = balance1 + amount1Out > r1
             ? balance1 + amount1Out - r1
             : 0;
+        // slither-disable-next-line incorrect-equality
         if (amount0In == 0 && amount1In == 0) revert InsufficientInput();
 
         // Apply 0.3% fee. Multiply balances by 1000 - fee_bps; the k
@@ -177,6 +181,7 @@ contract MiniAMM is ERC20, ReentrancyGuard {
     /// @notice View helper — how much token1 you get for `amountIn` of token0.
     function quoteToken1Out(uint256 amountIn) external view returns (uint256) {
         (uint112 r0, uint112 r1) = getReserves();
+        // slither-disable-next-line incorrect-equality
         if (r0 == 0 || r1 == 0 || amountIn == 0) return 0;
         uint256 amountInWithFee = amountIn * (1000 - FEE_PER_MILLE);
         uint256 numerator = amountInWithFee * r1;
@@ -187,6 +192,7 @@ contract MiniAMM is ERC20, ReentrancyGuard {
     /// @notice View helper — how much token0 you get for `amountIn` of token1.
     function quoteToken0Out(uint256 amountIn) external view returns (uint256) {
         (uint112 r0, uint112 r1) = getReserves();
+        // slither-disable-next-line incorrect-equality
         if (r0 == 0 || r1 == 0 || amountIn == 0) return 0;
         uint256 amountInWithFee = amountIn * (1000 - FEE_PER_MILLE);
         uint256 numerator = amountInWithFee * r0;

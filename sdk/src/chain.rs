@@ -165,6 +165,7 @@ pub fn decode_revert(data: &str) -> String {
         "FeeAccountNotEmpty(uint32)", "InsufficientFeeBalance(uint32,uint256,uint256)", "BadFeeToken(uint8)",
         "AgentKilled(uint32)", "UnknownKey(uint32,bytes32)", "InsufficientBalance(uint32)", "NonceNotIncreasing(uint32,uint64,uint64)",
         "CapExceeded(uint32)", "Expired(uint256)", "AmountTooLarge()", "ZeroValue()",
+        "UnsupportedToken(uint256,uint256)", "ZeroAddress()", "NotPendingAdmin()", "BadConfig()",
     ];
     let d = data.trim_start_matches("0x");
     if d.len() < 8 { return String::new() }

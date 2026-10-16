@@ -57,6 +57,8 @@ export const settlementAbi = parseAbi([
   'error WrongFeeToken(uint32 agentId, uint8 token)', 'error FeeAccountNotEmpty(uint32 agentId)',
   'error InsufficientFeeBalance(uint32 agentId, uint256 balance, uint256 fee)', 'error BadFeeToken(uint8 token)',
   'error InsufficientBalance(uint32 agentId)', 'error AmountTooLarge()',
+  'error UnsupportedToken(uint256 expected, uint256 received)', 'error ZeroAddress()',
+  'event GroupSkipped(uint64 indexed batchId, uint32 indexed agentId, bytes reason)',
 ]);
 
 export const erc20Abi = parseAbi([

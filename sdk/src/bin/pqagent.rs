@@ -123,9 +123,13 @@ enum Cmd {
         /// amountIn (token units, e.g. 2e18 / 2ether / raw integer)
         #[arg(long)]
         amount: String,
-        /// minimum amountOut (slippage bound)
-        #[arg(long, default_value = "0")]
-        min_out: String,
+        /// minimum amountOut (slippage bound). Required: an order without one can be sandwiched for its
+        /// whole value (audit M-02). Pass --no-slippage-limit to sign minOut = 0 deliberately.
+        #[arg(long, required_unless_present = "no_slippage_limit")]
+        min_out: Option<String>,
+        /// sign with minOut = 0 (no slippage protection); only for tests
+        #[arg(long, conflicts_with = "min_out")]
+        no_slippage_limit: bool,
         /// nonce (default: max(local counter, on-chain lastNonce + 1))
         #[arg(long)]
         nonce: Option<u64>,
@@ -286,7 +290,7 @@ fn run(cli: Cli) -> Result<()> {
                 println!("alert threshold {}  low={}  auto top-up {}", fmt_units(b.alert_threshold.parse().unwrap()), b.low, b.auto_top_up_amount);
             })
         }
-        Cmd::Sign { buy, sell: _, amount, min_out, nonce, expiry, ttl, out } => {
+        Cmd::Sign { buy, sell: _, amount, min_out, no_slippage_limit: _, nonce, expiry, ttl, out } => {
             let mut a = open(&cli)?;
             let rpc = match &a.config.rpc { Some(_) => a.rpc().ok(), None => None };
             let nonce = match nonce { Some(n) => *n, None => a.next_nonce(rpc.as_ref())? };
@@ -297,7 +301,7 @@ fn run(cli: Cli) -> Result<()> {
                     a.default_expiry(now, *ttl)?
                 }
             };
-            let order = Order { buy_base: *buy, amount_in: amt(amount)?, min_amount_out: amt(min_out)? };
+            let order = Order { buy_base: *buy, amount_in: amt(amount)?, min_amount_out: match min_out { Some(m) => amt(m)?, None => 0 } };
             let s = a.sign(order, nonce, expiry)?;
             let js = serde_json::to_string_pretty(&s)? + "\n";
             match out {

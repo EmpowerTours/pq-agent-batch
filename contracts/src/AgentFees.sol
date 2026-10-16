@@ -16,10 +16,11 @@ import { AgentRegistry } from "./AgentRegistry.sol";
 ///         agent's fee token. Fees are summed in memory and written once per agent and once per
 ///         token per batch; they accrue here and `sweepFees` sends them to `registry.treasury()`.
 ///
-///         If an agent's fee balance cannot cover its group, the WHOLE batch reverts with
-///         `InsufficientFeeBalance(agentId, balance, fee)`: nothing is settled for free, and the
-///         service must re-batch without that agent. Services check `feeQuote` / `feeAccount`
-///         (minus any pending withdrawal) BEFORE proving.
+///         If an agent's fee balance cannot cover its group, THAT GROUP is skipped (no trade, no
+///         fee, nonce not advanced; `GroupSkipped(batchId, agentId, InsufficientFeeBalance...)`) and
+///         the rest of the batch settles (audit M-01). Nothing is settled for free. If no group can
+///         settle, the batch reverts with the first group's error. Services still check
+///         `feeQuote` / `feeAccount` (minus any pending withdrawal) BEFORE proving.
 ///
 ///         Alerts: when a settlement (or a withdrawal) takes the balance below the owner's
 ///         threshold, `LowFeeBalance` is emitted ONCE; it re-arms only after the balance is back
@@ -99,6 +100,8 @@ abstract contract AgentFees is ReentrancyGuardTransient {
     error TopUpDisabled(uint32 agentId);
     error NotBelowThreshold(uint32 agentId, uint256 balance, uint256 threshold);
     error NativeTransferFailed();
+    error ZeroAddress();
+    error UnsupportedToken(uint256 expected, uint256 received);   // fee-on-transfer / rebasing (audit L-02)
 
     constructor(AgentRegistry _registry) {
         registry = _registry;
@@ -112,6 +115,7 @@ abstract contract AgentFees is ReentrancyGuardTransient {
     }
 
     function _operator(uint32 id) internal view returns (address operator, bool active) {
+        // slither-disable-next-line unused-return (audit S-06: only operator/active are needed)
         (operator, active,,,,) = registry.agents(id);
     }
 
@@ -174,13 +178,14 @@ abstract contract AgentFees is ReentrancyGuardTransient {
     function depositFeeToken(uint32 id, uint256 amount) external nonReentrant {
         uint8 t = feeAccount[id].token;
         if (t == 0) revert WrongFeeToken(id, t);
-        IERC20(feeToken[t]).safeTransferFrom(msg.sender, address(this), amount);
+        _pullExact(IERC20(feeToken[t]), msg.sender, amount);
         _credit(id, t, amount);
     }
 
     /// @notice Start a withdrawal; executable after `feeWithdrawDelay`. Until then the balance still
     ///         pays for batches, so a batch proved against it cannot be griefed by a sudden withdrawal.
     function requestFeeWithdrawal(uint32 id, uint96 amount, address to) external onlyOperator(id) {
+        if (to == address(0)) revert ZeroAddress();
         uint64 readyAt = uint64(block.timestamp) + feeWithdrawDelay;
         pendingFeeWithdrawal[id] = PendingWithdrawal(amount, readyAt, to);
         emit FeeWithdrawalRequested(id, amount, to, readyAt);
@@ -230,7 +235,7 @@ abstract contract AgentFees is ReentrancyGuardTransient {
         FeeAccount memory a = feeAccount[id];
         if (a.token == 0) revert WrongFeeToken(id, 0);
         if (a.balance >= a.threshold) revert NotBelowThreshold(id, a.balance, a.threshold);
-        IERC20(feeToken[a.token]).safeTransferFrom(cfg.from, address(this), cfg.amount);
+        _pullExact(IERC20(feeToken[a.token]), cfg.from, cfg.amount);
         a.balance += cfg.amount;                       // checked
         if (a.balance >= a.threshold) a.low = false;
         feeAccount[id] = a;
@@ -282,6 +287,15 @@ abstract contract AgentFees is ReentrancyGuardTransient {
         feeAccount[id] = a;
     }
 
+    /// Pulls exactly `amount` or reverts: fee-on-transfer and other short-delivering tokens are rejected
+    /// instead of being credited at face value (which would make balances exceed real holdings).
+    function _pullExact(IERC20 token, address from, uint256 amount) internal {
+        uint256 before = token.balanceOf(address(this));
+        token.safeTransferFrom(from, address(this), amount);
+        uint256 got = token.balanceOf(address(this)) - before;
+        if (got != amount) revert UnsupportedToken(amount, got);
+    }
+
     function _send(uint8 t, address to, uint256 amt) private {
         if (amt == 0) return;
         if (t == 0) {
@@ -302,10 +316,15 @@ abstract contract AgentFees is ReentrancyGuardTransient {
         uint256[MAX_FEE_TOKENS] total;
     }
 
-    /// Charge one agent group IN MEMORY (one SLOAD of the account). Reverts the batch if short.
-    /// Returns the post-charge account packed in one word (same layout as storage) with bit 255
-    /// set when a fee was taken, so the batch keeps no per-group struct allocations.
-    function _chargeFee(FeeCtx memory f, uint32 id, uint256 actions) internal view returns (uint256 w) {
+    /// Charge one agent group IN MEMORY (one SLOAD of the account). Does not revert when the balance is
+    /// short: returns `err` (abi-encoded InsufficientFeeBalance) and leaves the batch totals untouched,
+    /// so the caller can skip just this group. On success returns the post-charge account packed in one
+    /// word (same layout as storage) with bit 255 set when a fee was taken.
+    function _chargeFee(FeeCtx memory f, uint32 id, uint256 actions)
+        internal
+        view
+        returns (uint256 w, bytes memory err)
+    {
         FeeAccount memory a = feeAccount[id];
         uint8 t = a.token;
         if (f.loaded & (1 << t) == 0) {
@@ -317,7 +336,7 @@ abstract contract AgentFees is ReentrancyGuardTransient {
         uint256 fee = actions * f.perAction[t];        // actions < 2^16, perAction < 2^72: no overflow
         if (f.cap[t] != 0 && fee > f.cap[t]) fee = f.cap[t];
         uint256 bal = a.balance;
-        if (fee > bal) revert InsufficientFeeBalance(id, bal, fee);
+        if (fee > bal) return (0, abi.encodeWithSelector(InsufficientFeeBalance.selector, id, bal, fee));
         if (fee != 0) {
             unchecked { bal -= fee; }
             f.total[t] += fee;

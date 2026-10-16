@@ -112,21 +112,31 @@ contract AgentFeesTest is V2Fixture {
 
     // ------------------------------------------------------------ insufficient balance
 
-    function test_InsufficientFeeBalance_RejectsWholeBatch() public {
+    /// audit M-01: the short agent's group is skipped (no trade, no fee, nonce untouched); the rest settles.
+    function test_InsufficientFeeBalance_SkipsOnlyThatGroup() public {
         _fundNative(idA, 1 ether);
         _fundNative(idB, 5e14);                             // needs 1e15
         bytes memory blob = _twoAgentBatch();
         bytes memory proof = _proof(1, blob);
-        vm.expectRevert(abi.encodeWithSelector(AgentFees.InsufficientFeeBalance.selector, idB, 5e14, 1e15));
+        (uint96 bB0, uint96 bQ0,) = _state(idB);
+        vm.expectEmit(address(bs));
+        emit BatchSettlementV2.GroupSkipped(1, idB,
+            abi.encodeWithSelector(AgentFees.InsufficientFeeBalance.selector, idB, 5e14, 1e15));
         bs.settle(1, blob, proof);
-        // nothing moved: no free settlement, no partial fee, nonces untouched
-        assertEq(_bal(idA), 1 ether);
+        assertEq(_bal(idB), 5e14, "no partial fee");
+        (uint96 bB1, uint96 bQ1, uint64 nB) = _state(idB);
+        assertEq(nB, 0); assertEq(bB1, bB0); assertEq(bQ1, bQ0);
+        assertEq(_bal(idA), 1 ether - 2e15, "A paid for its 2 orders");
         (,, uint64 nA) = _state(idA);
-        assertEq(nA, 0);
-        // the service re-batches without B
-        bytes memory onlyA = bytes.concat(_hdr(idA, 1, 1, exp, PK_A), _ord(false, 1e18, 0));
-        bs.settle(2, onlyA, _proof(2, onlyA));
-        assertEq(_bal(idA), 1 ether - 1e15);
+        assertEq(nA, 2);
+        assertEq(bs.accruedFees(0), 2e15);
+        assertEq(address(bs).balance, uint256(_bal(idA)) + _bal(idB) + bs.accruedFees(0), "native solvent");
+        _assertSolvent();
+        // a batch of only short agents still reverts: nothing settles for free
+        bytes memory onlyB = bytes.concat(_hdr(idB, 1, 1, exp, PK_B), _ord(true, 1e18, 0));
+        bytes memory proofB = _proof(2, onlyB);
+        vm.expectRevert(abi.encodeWithSelector(AgentFees.InsufficientFeeBalance.selector, idB, 5e14, 1e15));
+        bs.settle(2, onlyB, proofB);
     }
 
     function test_UnfundedAgentRejectedWhenFeesOn() public {
@@ -494,17 +504,20 @@ contract AgentFeesTest is V2Fixture {
         assertEq(bs.feeQuote(idA, nA), fA);
 
         bytes memory proof = _proof(1, blob);
-        if (fA > depA) {
+        bool okA = fA <= depA;
+        bool okB = fB <= depB;
+        if (!okA && !okB) {   // nothing settleable: reverts with the first group's error
             vm.expectRevert(abi.encodeWithSelector(AgentFees.InsufficientFeeBalance.selector, idA, uint256(depA), fA));
             bs.settle(1, blob, proof);
-        } else if (fB > depB) {
-            vm.expectRevert(abi.encodeWithSelector(AgentFees.InsufficientFeeBalance.selector, idB, uint256(depB), fB));
+        } else {              // audit M-01: a short group is skipped, the other settles
             bs.settle(1, blob, proof);
-        } else {
-            bs.settle(1, blob, proof);
-            assertEq(_bal(idA), depA - fA);
-            assertEq(_bal(idB), depB - fB);
-            assertEq(bs.accruedFees(0), fA + fB);
+            assertEq(_bal(idA), okA ? depA - fA : depA);
+            assertEq(_bal(idB), okB ? depB - fB : depB);
+            assertEq(bs.accruedFees(0), (okA ? fA : 0) + (okB ? fB : 0));
+            (,, uint64 nAfterA) = _state(idA);
+            (,, uint64 nAfterB) = _state(idB);
+            assertEq(nAfterA, okA ? nA : 0);
+            assertEq(nAfterB, okB ? nB : 0);
         }
         assertEq(address(bs).balance, uint256(_bal(idA)) + _bal(idB) + bs.accruedFees(0), "native solvent");
         _assertSolvent();

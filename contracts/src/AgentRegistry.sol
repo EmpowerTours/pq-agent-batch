@@ -4,7 +4,9 @@ pragma solidity 0.8.28;
 /// @title  AgentRegistry
 /// @notice Who may trade through BatchSettlementV2, with which post-quantum keys,
 ///         and how much per batch.
-/// @dev    Milestone scope: permissioned registration by `admin`. Each agent has
+/// @dev    Admin powers (register, caps, revive, fees, slash, retire) are meant for a multisig behind a
+///         timelock; the guardian (kill only) for a fast multisig. Admin is transferable in two steps.
+///         Milestone scope: permissioned registration by `admin`. Each agent has
 ///         a set of ML-DSA-65 key commitments (SHA-256 of the encoded public
 ///         key, the same `pkHash` the SP1 guest commits), a MON stake, per-batch
 ///         caps on what it can spend of each side of the market, and a kill
@@ -26,6 +28,7 @@ contract AgentRegistry {
     }
 
     address public admin;
+    address public pendingAdmin;   // two-step admin transfer (audit L-04)
     address public guardian;   // may only kill, never unkill or register
     uint96  public immutable minStake;
     uint32  public agentCount;
@@ -55,6 +58,8 @@ contract AgentRegistry {
     event RegistrationFeePaid(uint32 indexed agentId, uint96 fee);
     event OpenRegistrationSet(bool open, uint128 capBaseIn, uint128 capQuoteIn);
     event RegistrationFeesSwept(uint256 amount, address to);
+    event AdminTransferStarted(address indexed current, address indexed pending);
+    event AdminTransferred(address indexed previous, address indexed next);
 
     error NotAdmin();
     error NotAuthorised();
@@ -67,6 +72,13 @@ contract AgentRegistry {
     error LastKey();
     error ZeroValue();
     error TransferFailed();
+    error NotPendingAdmin();
+
+    /// Non-reverting status codes returned by agentStatus().
+    uint8 public constant STATUS_OK = 0;
+    uint8 public constant STATUS_UNKNOWN_AGENT = 1;
+    uint8 public constant STATUS_KILLED = 2;
+    uint8 public constant STATUS_UNKNOWN_KEY = 3;
 
     constructor(address _admin, address _guardian, uint96 _minStake) {
         if (_admin == address(0) || _guardian == address(0)) revert ZeroValue();
@@ -84,6 +96,22 @@ contract AgentRegistry {
     modifier onlyAdminOrOperator(uint32 id) {
         if (msg.sender != admin && msg.sender != agents[id].operator) revert NotAuthorised();
         _;
+    }
+
+    // ------------------------------------------------------------ admin handover
+
+    /// @notice Step 1 of 2: propose a new admin (e.g. a Safe multisig or a timelock). address(0) cancels.
+    function transferAdmin(address next) external onlyAdmin {
+        pendingAdmin = next;
+        emit AdminTransferStarted(admin, next);
+    }
+
+    /// @notice Step 2 of 2: the proposed admin accepts. Prevents handing control to a wrong address.
+    function acceptAdmin() external {
+        if (msg.sender != pendingAdmin) revert NotPendingAdmin();
+        emit AdminTransferred(admin, msg.sender);
+        admin = msg.sender;
+        pendingAdmin = address(0);
     }
 
     // ------------------------------------------------------------ registration
@@ -200,6 +228,7 @@ contract AgentRegistry {
         accruedRegistrationFees = 0;
         address to = treasury;
         emit RegistrationFeesSwept(amt, to);
+        // slither-disable-next-line arbitrary-send-eth (audit S-02: `to` is the admin-set treasury, amount is accrued fees)
         (bool ok,) = payable(to).call{ value: amt }("");
         if (!ok) revert TransferFailed();
     }
@@ -214,6 +243,7 @@ contract AgentRegistry {
 
     /// @notice Placeholder for the slashing policy: admin moves stake out.
     function slash(uint32 id, uint96 amount, address payable to) external onlyAdmin {
+        if (to == address(0)) revert ZeroValue();
         agents[id].stake -= amount;
         emit Slashed(id, amount, to);
         (bool ok,) = to.call{ value: amount }("");
@@ -249,6 +279,20 @@ contract AgentRegistry {
         if (a.killed) revert AgentKilled(id);
         if (!isAgentKey[id][pkHash]) revert UnknownKey(id, pkHash);
         return (a.capBaseIn, a.capQuoteIn);
+    }
+
+    /// @notice Non-reverting form of checkAgent, used by BatchSettlementV2 so that one bad agent group is
+    ///         skipped instead of reverting the whole proved batch (audit M-01). status: see STATUS_*.
+    function agentStatus(uint32 id, bytes32 pkHash)
+        external
+        view
+        returns (uint8 status, uint128 capBaseIn, uint128 capQuoteIn)
+    {
+        Agent storage a = agents[id];
+        if (!a.active) return (STATUS_UNKNOWN_AGENT, 0, 0);
+        if (a.killed) return (STATUS_KILLED, 0, 0);
+        if (!isAgentKey[id][pkHash]) return (STATUS_UNKNOWN_KEY, 0, 0);
+        return (STATUS_OK, a.capBaseIn, a.capQuoteIn);
     }
 
     /// @notice For apps: is `pkHash` a current key of a live (registered, not killed) agent?

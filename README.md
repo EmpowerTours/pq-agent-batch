@@ -117,7 +117,7 @@ sequenceDiagram
 |---|---|
 | **Fee balance** | One fee account per agent, kept in one storage slot. It holds **native MON** (token 0) or one admin-listed **ERC20** such as USDC (tokens 1–3). Anyone can deposit for an agent. Only the owner (the agent's `operator` in the registry) can withdraw, switch token (only when the balance is empty), set alerts and configure top-up. |
 | **Fee per action** | The admin sets `setFeeConfig(token, feePerAction, maxFeePerBatch, enabled)`. Each agent group in a batch is charged `min(orders × feePerAction, maxFeePerBatch)`, where a cap of 0 means uncapped. The charge is summed in memory and written once per agent. Each token's config and its accrued total share one slot, so they are read once and written once per batch. |
-| **Insufficient balance** | **The whole batch reverts** with `InsufficientFeeBalance(agentId, balance, fee)`. Nothing settles for free, and nothing is skipped silently. Excluding an agent means re-proving, so the service must check `feeQuote(agentId, n)` against `feeAccount(agentId)` *before* proving and leave short agents out. `settle_proof.py` repeats this check before sending. |
+| **Insufficient balance** | **Only that agent's group is skipped** (since the [audit](audits/REPORT.md), finding M-01): no trade, no fee, nonce unchanged, and the contract emits `GroupSkipped(batchId, agentId, InsufficientFeeBalance(...))`. The rest of the batch settles. Nothing settles for free. If no group in the batch can settle, `settle` reverts with the first group's error. The same rule covers every agent-state problem that can appear after proving: expiry, a killed or retired agent, a revoked key, a stale nonce, caps and trading balance. Services should still check `feeQuote(agentId, n)` against `feeAccount(agentId)` *before* proving, and `settle_proof.py` repeats this check before sending. |
 | **Withdrawals** | Two steps: `requestFeeWithdrawal` → `executeFeeWithdrawal` after `feeWithdrawDelay` (set by the admin, at most 7 days). Until then the balance still pays for batches, so an owner cannot grief a batch that is already proved by pulling funds just before settlement. The payout is `min(requested, balance at execution)`. |
 | **Treasury** | Fees accrue per token in the contract. `sweepFees(token)` is permissionless and sends them to `registry.treasury()`, which the admin sets and which is intended to be a multisig. Accrual instead of a transfer per batch means a treasury contract can never make a batch revert. |
 | **Registration** | `msg.value` = `registrationFee` (one-time, non-refundable, accrued for the treasury, swept by `sweepRegistrationFees()`) + **bond** (`stake`, at least `minStake`, refunded on `retire`). The admin can also open `selfRegister(pkHash, capBaseIn, capQuoteIn)`: msg.sender becomes the operator, and the requested caps must not exceed the admin's maximums (`CapsTooHigh`; 0 = the maximum). `isAuthorized(agentId, pkHash)` is a one-call check for apps. |
@@ -196,12 +196,13 @@ forge install foundry-rs/forge-std@v1.16.1 --shallow --no-git
 forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --shallow --no-git
 forge test
 ```
-64 tests:
+83 tests (plus 5 Halmos symbolic checks, `halmos --match-contract HalmosAudit`):
 - `BatchSettlementV2.t.sol` (29): happy path, netting, binding, malformed-input and fuzz tests, plus a parity fixture from the Rust guest.
-- `AgentFees.t.sol` (25): fee deduction (MON and ERC20, per-batch cap), insufficient balance rejects the whole batch, treasury accounting and sweep, registration fee + refundable bond, self-registration, alert exactly once per crossing and again after refill, top-up safety (configured amount only, allowance-bounded, no pulling for other agents), reentrancy (ERC20 hooks and native receivers), and fuzzing of fee math and solvency.
+- `AgentFees.t.sol` (25): fee deduction (MON and ERC20, per-batch cap), insufficient balance skips only that agent's group, treasury accounting and sweep, registration fee + refundable bond, self-registration, alert exactly once per crossing and again after refill, top-up safety (configured amount only, allowance-bounded, no pulling for other agents), reentrancy (ERC20 hooks and native receivers), and fuzzing of fee math and solvency.
 - `RealGroth16Settle.t.sol` (7): settles the committed **real** N=10 and N=100 proofs against the real verifier bytecode, and checks that replay, tampered orders, a wrong batch id, a wrong chain and a tampered proof are all rejected.
 - `RealGroth16Fees.t.sol` (2): the same real proofs with fees on (balances, accrual, alert) and the forge gas of the fee path.
 - `GasProbeV2.t.sol` (1): a local gas probe.
+- `audit/` (19): one regression test per audit fix, property fuzzing (caps, AMM residual), a stateful invariant campaign (solvency, exact fee and bond conservation, monotonic nonces, kill switch, replay), a worst-case gas check against Monad's 30M cap, and the Halmos checks. For a deep local run, use `FOUNDRY_PROFILE=deep forge test` (50k fuzz runs, 1,000 × 500 invariant calls). See [audits/REPORT.md](audits/REPORT.md).
 
 ### 2. Rust tests and guest execution
 ```bash
@@ -245,6 +246,8 @@ SETTLEMENT=0x... KEY_FILE=/path/to/devnet.key python3 script/settle_proof.py pat
 Before sending, `settle_proof.py` checks the chain id, the bound settlement address, contract vkey == proof vkey, contract digest == proof digest == public values, and the nonce preconditions. It then sends with gas limit = `eth_estimateGas` and appends the receipt and trace breakdown to `results/solonet/settlements.jsonl`. Settle batches in nonce order. The devnet key is never committed.
 
 ## Security notes and known limitations
+
+**Audit (free tooling, Oct 2026):** see [audits/REPORT.md](audits/REPORT.md). It covers Slither, Aderyn, Mythril, Halmos, Foundry fuzz and invariant tests, and a manual review. All Medium findings and the small Low findings are fixed. The report has a readiness verdict for a limited mainnet launch and a scope for a paid audit. This is not a professional audit.
 - **Testnet/devnet only, unaudited.** Do not use with real funds. MockToken and MiniAMM are test contracts.
 - **The Monad transaction itself is still ECDSA.** ML-DSA protects the *agent's authorisation of each order*. The relayer submitting `settle()` uses a normal secp256k1 account. Anyone can relay, and a valid proof is all that is needed, so a compromised relayer cannot forge or alter orders. It can only delay or censor them.
 - **Expiry and model hash are per agent group.** Within one batch, all of an agent's orders share one expiry and one model hash. Different expiries or models need separate batches.

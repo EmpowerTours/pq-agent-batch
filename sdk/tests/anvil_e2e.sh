@@ -70,8 +70,8 @@ log "pqagent sign x3 (+ one with a nonce gap)"
 mkdir actions
 "$PQ" sign --sell --amount 1e18 --min-out 1 --out actions
 "$PQ" sign --buy --amount 2.5e18 --min-out 1 --out actions
-"$PQ" sign --sell --amount 1.5e18 --out actions
-"$PQ" sign --buy --amount 1e18 --nonce 9 --out actions
+"$PQ" sign --sell --amount 1.5e18 --min-out 1 --out actions
+"$PQ" sign --buy --amount 1e18 --min-out 1 --nonce 9 --out actions
 "$PQ" verify actions/000003-000000000001.json
 [ "$(jget actions/000003-000000000003.json "['nonce']")" = 3 ] || fail "auto nonce"
 
@@ -93,7 +93,7 @@ echo "contract batchDigest == SDK digest: $ONCHAIN"
 
 log "fee balance limits the batch: nonces 1..15 pending, balance pays for 10"
 rm actions/000003-000000000009.json
-for n in $(seq 4 15); do "$PQ" sign --sell --amount 1e17 --nonce "$n" --out actions >/dev/null; done
+for n in $(seq 4 15); do "$PQ" sign --sell --amount 1e17 --min-out 1 --nonce "$n" --out actions >/dev/null; done
 "$PQ" batch --actions actions --batch-id 8 --out input2.json > b2.txt; cat b2.txt
 [ "$(jget input2.json "['orders']")" = 10 ] || fail "fee trim"
 grep -q "insufficient prepaid fee balance" b2.txt || fail "fee reason"

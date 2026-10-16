@@ -126,19 +126,36 @@ contract BatchSettlementV2Test is V2Fixture {
         bs.settle(1, blob, proof);
     }
 
+    /// audit M-01: a killed agent's group is skipped (event), the other agent still settles; a batch in
+    /// which every group is unsettleable reverts with the first group's error.
     function test_KilledAgentRejected_ByGuardian() public {
         vm.prank(guardian);
         reg.kill(idB);
         bytes memory blob = _twoAgentBatch();
         bytes memory proof = _proof(1, blob);
-        vm.expectRevert(abi.encodeWithSelector(AgentRegistry.AgentKilled.selector, idB));
+        (uint96 bB0, uint96 bQ0,) = _state(idB);
+        vm.expectEmit(address(bs));
+        emit BatchSettlementV2.GroupSkipped(1, idB, abi.encodeWithSelector(AgentRegistry.AgentKilled.selector, idB));
         bs.settle(1, blob, proof);
+        (uint96 bB1, uint96 bQ1, uint64 bN) = _state(idB);
+        assertEq(bN, 0, "killed agent's nonce untouched");
+        assertEq(bB1, bB0); assertEq(bQ1, bQ0);
+        (,, uint64 aN) = _state(idA);
+        assertEq(aN, 2, "live agent settled");
+        _assertSolvent();
+
+        bytes memory onlyB = bytes.concat(_hdr(idB, 1, 1, exp, PK_B), _ord(true, 1e18, 0));
+        bytes memory proofB = _proof(2, onlyB);
+        vm.expectRevert(abi.encodeWithSelector(AgentRegistry.AgentKilled.selector, idB));
+        bs.settle(2, onlyB, proofB);
         vm.prank(guardian);
         vm.expectRevert(AgentRegistry.NotAdmin.selector);
         reg.revive(idB);
         vm.prank(admin);
         reg.revive(idB);
-        bs.settle(1, blob, proof);
+        bs.settle(2, onlyB, proofB);
+        (,, bN) = _state(idB);
+        assertEq(bN, 1);
     }
 
     function test_CapExceededRejected() public {
@@ -146,8 +163,15 @@ contract BatchSettlementV2Test is V2Fixture {
         reg.setCaps(idA, 120e18, 2_000e18);
         bytes memory blob = _twoAgentBatch(); // A sells 150 > 120
         bytes memory proof = _proof(1, blob);
-        vm.expectRevert(abi.encodeWithSelector(BatchSettlementV2.CapExceeded.selector, idA));
+        vm.expectEmit(address(bs));
+        emit BatchSettlementV2.GroupSkipped(1, idA, abi.encodeWithSelector(BatchSettlementV2.CapExceeded.selector, idA));
         bs.settle(1, blob, proof);
+        (uint96 aB, , uint64 aN) = _state(idA);
+        assertEq(aN, 0); assertEq(aB, 1_000e18, "over-cap agent not debited");
+        bytes memory onlyA = bytes.concat(_hdr(idA, 1, 1, exp, PK_A), _ord(false, 121e18, 0));
+        bytes memory proofA = _proof(2, onlyA);
+        vm.expectRevert(abi.encodeWithSelector(BatchSettlementV2.CapExceeded.selector, idA));
+        bs.settle(2, onlyA, proofA);
     }
 
     // ------------------------------------------------------------ replay / nonces
@@ -175,8 +199,15 @@ contract BatchSettlementV2Test is V2Fixture {
         bytes memory b2 = bytes.concat(_hdr(idA, 1, 3, exp, PK_A), _ord(false, 1e18, 0),
             _hdr(idB, 1, 1, exp, PK_B), _ord(true, 200e18, 0));
         bytes memory proof = _proof(2, b2);
-        vm.expectRevert(abi.encodeWithSelector(BatchSettlementV2.NonceNotIncreasing.selector, idB, uint64(1), uint64(1)));
+        (uint96 bB0, uint96 bQ0,) = _state(idB);
+        vm.expectEmit(address(bs));
+        emit BatchSettlementV2.GroupSkipped(2, idB,
+            abi.encodeWithSelector(BatchSettlementV2.NonceNotIncreasing.selector, idB, uint64(1), uint64(1)));
         bs.settle(2, b2, proof);
+        (uint96 bB1, uint96 bQ1, uint64 bN) = _state(idB);
+        assertEq(bN, 1); assertEq(bB1, bB0); assertEq(bQ1, bQ0);   // replayed group did not execute again
+        (,, uint64 aN) = _state(idA);
+        assertEq(aN, 3);
     }
 
     function test_NonceGapAllowedAndAdvances() public {

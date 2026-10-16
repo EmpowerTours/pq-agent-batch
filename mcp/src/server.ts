@@ -262,16 +262,16 @@ export function createServer(cfg: ServerConfig): McpServer {
       inputSchema: {
         side: z.enum(['buy', 'sell']).describe('buy = spend quote for base; sell = sell base for quote'),
         amountIn: amount('Order input amount (> 0, < 2^96)'),
-        minAmountOut: amount('Slippage bound: minimum output').optional(),
+        minAmountOut: amount('Slippage bound: minimum output. Required (audit M-02): with 0 the order can be sandwiched for its whole value; pass "0" only deliberately.'),
         nonce: z.number().int().min(1).optional(),
         expiry: z.number().int().min(0).max(0xffffffff).optional().describe('absolute unix seconds'),
         ttlSecs: z.number().int().min(60).max(31_536_000).optional().describe('default 3600'),
         outDir: z.string().optional().describe('directory to also write the JSON into'),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    }, guard(async (a: { side: 'buy' | 'sell'; amountIn: string; minAmountOut?: string; nonce?: number; expiry?: number; ttlSecs?: number; outDir?: string }) => {
+    }, guard(async (a: { side: 'buy' | 'sell'; amountIn: string; minAmountOut: string; nonce?: number; expiry?: number; ttlSecs?: number; outDir?: string }) => {
       const ag = await Agent.open(cfg.keystoreDir!, { passphrase: cfg.keystorePassphrase, rpc: cfg.rpcUrl });
-      const { action, path } = await ag.sign({ buyBase: a.side === 'buy', amountIn: parseAmount(a.amountIn), minAmountOut: a.minAmountOut ? parseAmount(a.minAmountOut) : 0n },
+      const { action, path } = await ag.sign({ buyBase: a.side === 'buy', amountIn: parseAmount(a.amountIn), minAmountOut: parseAmount(a.minAmountOut) },
         { nonce: a.nonce, expiry: a.expiry, ttl: a.ttlSecs, out: a.outDir });
       return { signedAction: action, writtenTo: path };
     }));

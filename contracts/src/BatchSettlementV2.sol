@@ -29,7 +29,15 @@ import { MiniAMM } from "./dex/MiniAMM.sol";
 ///
 /// Fees (AgentFees, contract-side only; the proved batch format and digest are unchanged):
 /// each agent group is charged min(count * feePerAction, maxFeePerBatch) from the agent's
-/// prepaid fee balance; a short balance reverts the whole batch with InsufficientFeeBalance.
+/// prepaid fee balance.
+///
+/// Group skipping (audit M-01): a group whose AGENT STATE makes it unsettleable at settle time
+/// (expired, unknown/retired agent, killed, revoked key, nonce not above lastNonce, over caps,
+/// short trading or fee balance) is skipped with `GroupSkipped(batchId, agentId, reason)`: no trade,
+/// no fee, no nonce change. The other groups settle. Framing errors, a bad proof and slippage still
+/// revert the whole batch. If NO group can settle (e.g. a replayed batch) the call reverts with the
+/// first group's error. Without this, any one agent in a batch could grief the whole proved batch by
+/// withdrawing, killing itself or revoking its key after proving.
 contract BatchSettlementV2 is AgentFees {
     using SafeERC20 for IERC20;
 
@@ -57,8 +65,11 @@ contract BatchSettlementV2 is AgentFees {
 
     event Deposited(uint32 indexed agentId, uint96 base, uint96 quote);
     event Withdrawn(uint32 indexed agentId, uint96 base, uint96 quote, address to);
+    /// `orders` counts SETTLED orders (skipped groups excluded).
     event BatchSettled(uint64 indexed batchId, bytes32 digest, uint256 orders, uint256 baseIn,
         uint256 quoteIn, uint256 ammIn, uint256 ammOut);
+    /// `reason` is the full abi-encoded custom error the group would have reverted with.
+    event GroupSkipped(uint64 indexed batchId, uint32 indexed agentId, bytes reason);
 
     error EmptyBatch();
     error Malformed(uint256 offset);
@@ -70,8 +81,15 @@ contract BatchSettlementV2 is AgentFees {
     error SlippageExceeded(uint256 index, uint256 out, uint256 minOut);
     error EmptyPool();
     error ZeroAmount(uint256 index);
+    error AgentKilled(uint32 agentId);              // same selectors as AgentRegistry's errors
+    error UnknownKey(uint32 agentId, bytes32 pkHash);
+    error BadConfig();
 
     constructor(ISP1Verifier _verifier, bytes32 _vkey, AgentRegistry _registry, MiniAMM _pool) AgentFees(_registry) {
+        // audit L-05: a codeless verifier/registry/pool or a zero vkey would brick (or, for a verifier
+        // stub, unprotect) an immutable deployment.
+        if (_vkey == bytes32(0) || address(_verifier).code.length == 0 || address(_registry).code.length == 0
+            || address(_pool).code.length == 0) revert BadConfig();
         verifier = _verifier;
         batchProgramVKey = _vkey;
         pool = _pool;
@@ -86,8 +104,12 @@ contract BatchSettlementV2 is AgentFees {
     // ------------------------------------------------------------ agent funds
 
     function deposit(uint32 agentId, uint96 baseAmt, uint96 quoteAmt) external nonReentrant {
-        if (baseAmt > 0) base.safeTransferFrom(msg.sender, address(this), baseAmt);
-        if (quoteAmt > 0) quote.safeTransferFrom(msg.sender, address(this), quoteAmt);
+        // audit L-03: no deposits for unregistered (future) ids, whose funds would belong to whoever
+        // registers that id next.
+        (, bool active) = _operator(agentId);
+        if (!active) revert UnknownAgent(agentId);
+        if (baseAmt > 0) _pullExact(base, msg.sender, baseAmt);    // rejects fee-on-transfer tokens (L-02)
+        if (quoteAmt > 0) _pullExact(quote, msg.sender, quoteAmt);
         AgentState storage s = agentState[agentId];
         s.base += baseAmt;   // checked: reverts on uint96 overflow
         s.quote += quoteAmt;
@@ -95,8 +117,10 @@ contract BatchSettlementV2 is AgentFees {
     }
 
     function withdraw(uint32 agentId, uint96 baseAmt, uint96 quoteAmt, address to) external nonReentrant {
+        // slither-disable-next-line unused-return
         (address operator,,,,,) = registry.agents(agentId);
         if (msg.sender != operator) revert NotOperator();
+        if (to == address(0)) revert ZeroAddress();
         AgentState storage s = agentState[agentId];
         if (s.base < baseAmt || s.quote < quoteAmt) revert InsufficientBalance(agentId);
         s.base -= baseAmt;
@@ -129,14 +153,43 @@ contract BatchSettlementV2 is AgentFees {
         uint256 p;          // absolute calldata offset
         uint256 start;
         uint256 end;
-        uint256 n;          // orders seen
+        uint256 n;          // orders seen (all groups; used for error indexes)
         uint32  prevId;
-        uint256 totalBaseIn;
+        uint256 gBase;      // current group's base / quote in (added to totals only if it settles)
+        uint256 gQuote;
+        uint256 totalBaseIn;   // settled groups only
         uint256 totalQuoteIn;
+        uint256 settled;       // settled orders
+        bytes   firstErr;      // first skipped group's error
     }
 
-    /// @dev Pass 1 for one agent group: framing, registry, nonces, expiry, caps, debit IN MEMORY.
-    function _debitGroup(Cursor memory c, AgentState memory st) private view returns (uint32 id, uint256 count) {
+    /// Pass 1 for group `g`: debit + fee, or mark skipped.
+    function _pass1Group(Cursor memory c, AgentState[] memory st, uint32[] memory ids, uint256[] memory feeWord,
+        FeeCtx memory fctx, uint256 g, uint64 batchId) private
+    {
+        AgentState memory s = st[g];                       // zero-initialised
+        (uint32 gid, uint256 count, bytes memory err) = _debitGroup(c, s);
+        ids[g] = gid;
+        if (err.length == 0) (feeWord[g], err) = _chargeFee(fctx, gid, count);
+        if (err.length == 0) {
+            c.totalBaseIn += c.gBase;
+            c.totalQuoteIn += c.gQuote;
+            c.settled += count;
+        } else {
+            s.lastNonce = 0;                               // marks the group as skipped
+            emit GroupSkipped(batchId, gid, err);
+            if (c.firstErr.length == 0) c.firstErr = err;
+        }
+    }
+
+    /// @dev Pass 1 for one agent group. Framing errors revert. Agent-state problems are returned as `err`
+    ///      (abi-encoded custom error) so the caller skips the group. On success `st` holds the post-debit
+    ///      state (lastNonce >= 1, which pass 2 uses as the "settles" marker).
+    function _debitGroup(Cursor memory c, AgentState memory st)
+        private
+        view
+        returns (uint32 id, uint256 count, bytes memory err)
+    {
         uint256 p = c.p;
         if (p + HEADER > c.end) revert Malformed(p - c.start);
         uint64 firstNonce;
@@ -144,12 +197,12 @@ contract BatchSettlementV2 is AgentFees {
         bytes32 pkHash;
         (id, count, firstNonce, expiry, pkHash) = _header(p);
         if (count == 0) revert Malformed(p - c.start);
-        if (expiry < block.timestamp) revert Expired(c.n);
         if (uint256(firstNonce) + count - 1 > type(uint64).max) revert Malformed(p - c.start); // nonce overflow
         if (id <= c.prevId) revert OrdersNotGrouped(c.n);
         p += HEADER;
         if (p + count * ORDER > c.end) revert Malformed(p - c.start);
 
+        uint256 nBefore = c.n;
         uint256 agentBaseIn;
         uint256 agentQuoteIn;
         unchecked { // amounts < 2^96, count < 2^16: sums cannot overflow
@@ -167,27 +220,41 @@ contract BatchSettlementV2 is AgentFees {
             c.p = qEnd;
             c.n += count;
             c.prevId = id;
-            c.totalBaseIn += agentBaseIn;
-            c.totalQuoteIn += agentQuoteIn;
         }
+        c.gBase = agentBaseIn;
+        c.gQuote = agentQuoteIn;
 
-        (uint128 capB, uint128 capQ) = registry.checkAgent(id, pkHash);
+        if (expiry < block.timestamp) return (id, count, abi.encodeWithSelector(Expired.selector, nBefore));
+        (uint8 status, uint128 capB, uint128 capQ) = registry.agentStatus(id, pkHash);
+        if (status != 0) {
+            if (status == 1) err = abi.encodeWithSelector(UnknownAgent.selector, id);
+            else if (status == 2) err = abi.encodeWithSelector(AgentKilled.selector, id);
+            else err = abi.encodeWithSelector(UnknownKey.selector, id, pkHash);
+            return (id, count, err);
+        }
         AgentState memory cur = agentState[id];           // one SLOAD
-        if (firstNonce <= cur.lastNonce) revert NonceNotIncreasing(id, firstNonce, cur.lastNonce);
-        if (agentBaseIn > capB || agentQuoteIn > capQ) revert CapExceeded(id);
-        if (cur.base < agentBaseIn || cur.quote < agentQuoteIn) revert InsufficientBalance(id);
+        if (firstNonce <= cur.lastNonce) {
+            return (id, count, abi.encodeWithSelector(NonceNotIncreasing.selector, id, firstNonce, cur.lastNonce));
+        }
+        if (agentBaseIn > capB || agentQuoteIn > capQ) return (id, count, abi.encodeWithSelector(CapExceeded.selector, id));
+        if (cur.base < agentBaseIn || cur.quote < agentQuoteIn) {
+            return (id, count, abi.encodeWithSelector(InsufficientBalance.selector, id));
+        }
         st.base = cur.base - uint96(agentBaseIn);          // < cur.base, so the cast is exact
         st.quote = cur.quote - uint96(agentQuoteIn);
-        st.lastNonce = firstNonce + uint64(count) - 1;
+        st.lastNonce = firstNonce + uint64(count) - 1;     // >= 1 since firstNonce > lastNonce >= 0
     }
 
     // ------------------------------------------------------------ settlement
 
+    // slither-disable-start reentrancy-no-eth
+    // audit S-05: the only external calls after pass 1 go to the immutable pool and immutable tokens, and the
+    // whole function (and every other state-changing entrypoint) holds the transient nonReentrant lock.
     function settle(uint64 batchId, bytes calldata batch, bytes calldata proof) external nonReentrant {
         if (batch.length == 0) revert EmptyBatch();
-        // No batch nullifier: every group must start above its agent's lastNonce and
-        // advances it, and a batch has >= 1 group, so a replayed batch (or any batch
-        // re-using an order) always reverts NonceNotIncreasing.
+        // No batch nullifier: a group settles only if it starts above its agent's lastNonce, and settling
+        // advances it. A replayed batch therefore has every group skipped and reverts (first group's
+        // NonceNotIncreasing); a partially replayed one can only settle groups that never settled.
         uint256 start;
         assembly { start := batch.offset }
         uint256 end = start + batch.length;
@@ -199,21 +266,21 @@ contract BatchSettlementV2 is AgentFees {
         FeeCtx memory fctx;
 
         // ---- pass 1
-        Cursor memory c = Cursor(start, start, end, 0, 0, 0, 0);
+        Cursor memory c = Cursor(start, start, end, 0, 0, 0, 0, 0, 0, 0, "");
         uint256 groups;
         while (c.p < end) {
             if (groups == st.length) revert Malformed(c.p - start); // unreachable for well-formed input
-            st[groups] = AgentState(0, 0, 0);
-            (uint32 gid, uint256 count) = _debitGroup(c, st[groups]);
-            ids[groups] = gid;
-            feeWord[groups] = _chargeFee(fctx, gid, count);
+            _pass1Group(c, st, ids, feeWord, fctx, groups, batchId);
             unchecked { ++groups; }
+        }
+        if (c.settled == 0) {
+            bytes memory firstErr = c.firstErr;
+            assembly { revert(add(firstErr, 32), mload(firstErr)) }
         }
         uint256 totalBaseIn = c.totalBaseIn;
         uint256 totalQuoteIn = c.totalQuoteIn;
-        uint256 n = c.n;
 
-        // ---- one proof for the whole batch
+        // ---- one proof for the whole batch (every group, settled or skipped, is bound by the digest)
         bytes32 digest = batchDigest(batchId, batch);
         verifier.verifyProof(batchProgramVKey, abi.encode(digest), proof);
 
@@ -226,8 +293,8 @@ contract BatchSettlementV2 is AgentFees {
         uint256 ammOut;
         if (excessBase) {
             ammIn = totalBaseIn - totalQuoteIn * r0 / r1;
-            if (ammIn > 0) {
-                ammOut = _amountOut(ammIn, r0, r1);
+            ammOut = ammIn == 0 ? 0 : _amountOut(ammIn, r0, r1);
+            if (ammOut > 0) {   // audit L-06: a dust residual with zero output stays here instead of reverting
                 base.safeTransfer(address(pool), ammIn);
                 pool.swap(0, ammOut, address(this));
             }
@@ -235,12 +302,14 @@ contract BatchSettlementV2 is AgentFees {
         } else {
             ammIn = totalQuoteIn - totalBaseIn * r1 / r0;
             ammOut = _amountOut(ammIn, r1, r0);
-            quote.safeTransfer(address(pool), ammIn);
-            pool.swap(ammOut, 0, address(this));
+            if (ammOut > 0) {
+                quote.safeTransfer(address(pool), ammIn);
+                pool.swap(ammOut, 0, address(this));
+            }
             pot = totalBaseIn + ammOut;
         }
 
-        // ---- pass 2: per-order payout + slippage check, ONE SSTORE per agent
+        // ---- pass 2: per-order payout + slippage check, ONE SSTORE per settled agent
         // payout = amountIn * num / den, with (num, den) fixed per side for the whole batch
         (uint256 buyNum, uint256 buyDen, uint256 sellNum, uint256 sellDen) =
             excessBase ? (r0, r1, pot, totalBaseIn) : (pot, totalQuoteIn, r1, r0);
@@ -253,6 +322,11 @@ contract BatchSettlementV2 is AgentFees {
                 uint256 quoteOut;
                 unchecked { // amountIn < 2^96, num < 2^120: products < 2^216
                     qEnd = p + HEADER + ((_word(p) >> 208) & 0xffff) * ORDER;
+                    if (st[g].lastNonce == 0) {          // skipped group: no payout, no state change
+                        i += (qEnd - p - HEADER) / ORDER;
+                        p = qEnd;
+                        continue;
+                    }
                     for (uint256 q = p + HEADER; q < qEnd; q += ORDER) {
                         uint256 w;
                         assembly { w := calldataload(q) }
@@ -280,8 +354,9 @@ contract BatchSettlementV2 is AgentFees {
         }
         _accrueFees(fctx, batchId);
 
-        emit BatchSettled(batchId, digest, n, totalBaseIn, totalQuoteIn, ammIn, ammOut);
+        emit BatchSettled(batchId, digest, c.settled, totalBaseIn, totalQuoteIn, ammIn, ammOut);
     }
+    // slither-disable-end reentrancy-no-eth
 
     function _word(uint256 p) private pure returns (uint256 w) {
         assembly { w := calldataload(p) }

@@ -10,8 +10,14 @@ optimizer_runs = 1000000
 via_ir = true
 evm_version = "cancun"
 fuzz = { runs = 256 }
+invariant = { runs = 64, depth = 250, fail_on_revert = false }
 fs_permissions = [{ access = "read", path = "./" }, { access = "read", path = "../results" }]
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "forge-std/=lib/forge-std/src/",
 ]
+
+# Local deep audit campaign: FOUNDRY_PROFILE=deep forge test --match-path "test/audit/*"
+[profile.deep]
+fuzz = { runs = 50000 }
+invariant = { runs = 1000, depth = 500, fail_on_revert = false }
