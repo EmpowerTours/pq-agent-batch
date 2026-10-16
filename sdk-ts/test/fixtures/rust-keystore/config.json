@@ -1,0 +1,12 @@
+{
+  "schema": "pq-agent-batch/agent-config/v1",
+  "chainId": 20143,
+  "settlement": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+  "agentId": 1,
+  "pkHash": "0x8b1551c421b573beeaebb39debb1e0371e13c93155a7a5be60b29dd691095b05",
+  "modelHash": "0x3fa99e8b077ddcb22952784c4ef757df55bf91c5eecf00456db0e9d8fbb29309",
+  "modelSource": "string:fixture model",
+  "keyEncrypted": true,
+  "nextNonce": 1,
+  "expiryBucketSecs": 3600
+}

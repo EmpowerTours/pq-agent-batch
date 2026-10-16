@@ -1,0 +1,40 @@
+{
+  "name": "@empowertours/pqagent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript SDK for the pq-agent-batch proof-of-agency layer: ML-DSA-65 agent keys (Rust-keystore compatible), signed actions, registry/fee calls (viem) and the reference batcher",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "e2e": "node --import tsx scripts/e2e.ts"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@noble/post-quantum": "0.7.1",
+    "viem": "^2.57.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

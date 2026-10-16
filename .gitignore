@@ -28,3 +28,7 @@ __pycache__/
 # pqagent keystores (ML-DSA seeds): never commit
 .pqagent/
 **/.pqagent/
+
+# JS workspaces (sdk-ts, mcp)
+node_modules/
+**/dist/

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "algorithm": "ML-DSA-65 (FIPS 204) seed",
+  "pkHash": "0x8b1551c421b573beeaebb39debb1e0371e13c93155a7a5be60b29dd691095b05",
+  "encrypted": true,
+  "kdf": "argon2id(v19,m=19456,t=2,p=1)",
+  "salt": "82adf193b0a5a7d566d326186fa01e32",
+  "nonce": "41d2ccacf8bd92a5dcca471d",
+  "ciphertext": "5962e56c691cfc7afdf96560f4a439f4e81536905144e8ea72ccc016f0ee49da79a84c7d997af4697aa5f4ac24144fac"
+}

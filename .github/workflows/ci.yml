@@ -57,6 +57,50 @@ jobs:
       - name: pqagent CLI against a local anvil (init -> register -> fund -> sign -> status -> batch)
         run: bash sdk/tests/anvil_e2e.sh sdk/target/release/pqagent
 
+  ts-sdk:
+    name: TS SDK (golden parity + Rust cross-verification)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build the Rust pqagent CLI (cross-check target)
+        working-directory: sdk
+        run: cargo build --release --locked --bin pqagent
+      - name: npm ci + build
+        run: npm ci && npm run build
+      - name: vitest (keys, message, deterministic signatures, proved N=10/N=100 + agent-4 batches, batcher rules, keystore, Rust interop)
+        env:
+          PQAGENT_BIN: ${{ github.workspace }}/sdk/target/release/pqagent
+        run: npm test -w sdk-ts
+
+  mcp:
+    name: MCP server (unit + stdio/HTTP smoke against anvil)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.5
+      - name: Install pinned contract dependencies
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std@v1.16.1 --shallow --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --shallow --no-git
+      - name: npm ci + build
+        run: npm ci && npm run build
+      - name: MCP unit tests (in-memory client)
+        run: npm test -w mcp
+      - name: anvil - TS SDK end-to-end + MCP smoke over stdio, streamable HTTP and local mode
+        run: bash mcp/scripts/anvil-ci.sh
+
   guest-execute:
     name: SP1 guest execute (N=10) + tamper rejection
     runs-on: ubuntu-latest

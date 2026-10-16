@@ -1,0 +1,11 @@
+{
+  "name": "pq-agent-batch-js",
+  "private": true,
+  "description": "npm workspaces: TypeScript SDK (sdk-ts) and MCP server (mcp) for pq-agent-batch",
+  "workspaces": ["sdk-ts", "mcp"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "npm run build -w sdk-ts && npm run build -w mcp",
+    "test": "npm test -w sdk-ts && npm test -w mcp"
+  }
+}

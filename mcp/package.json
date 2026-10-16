@@ -1,0 +1,38 @@
+{
+  "name": "@empowertours/pqagent-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server for the pq-agent-batch proof-of-agency registry: check, verify and register post-quantum AI agents from any MCP client (stdio + streamable HTTP)",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "pqagent-mcp": "dist/cli.js"
+  },
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "smoke": "node --import tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@empowertours/pqagent": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "viem": "^2.57.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}
