@@ -1,0 +1,17 @@
+{
+  "note": "Solonet (local Monad devnet, chain 20143) stack used for the manual pqagent SDK run. Deployed with contracts/script/DeploySolonet.s.sol, OPEN_REGISTRATION=true, REGISTRATION_FEE=0.1 MON, FEE_PER_ACTION=0.001 MON, default self-registration maximum caps 10k base / 20k quote. TEST agents 1 and 2 are registered by the script; agent 3 was self-registered with the CLI.",
+  "chainId": 20143,
+  "verifier": "0x1C033Aa9B45bdb63A18208ed0FbF0F442B5886Fd",
+  "pool": "0x0C8E79F3534B00D9a3D4a856B665Bf4eBC22f2ba",
+  "registry": "0x28ef4A35d2618A7EdDB46D7c71634B8eDA7c0ABF",
+  "settlement": "0x0e1AD57BFb7E25656dE899571BE624559d871D10",
+  "batchProgramVKey": "0x0020ed358e42b85560d3f4114c57cd2b767e130766caf8bcaec7842799fd7d9d",
+  "agent3": {
+    "operator": "0xa0ee7a142d267c1f36714e4a8f75612f20a79720",
+    "pkHash": "0xf5709900c093dd7e3de0eb0853ef25c3974a53176dc9d2a5e0f4377425a7195c",
+    "modelHash": "0xf9125c7e8a996f6a7905194e7bc81af6f638aee0d642ed980e10abdad0b9ccb5",
+    "registerTx": "0x0f5308aa98ae96e5ede803f598a754ff0fb7baeaeb72df5223a2d728fc82adea"
+  },
+  "batch1Digest": "0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917",
+  "guestExecute": "exit_code=0, 3 orders, 4,392,306 cycles (local non-docker guest build; MockProver executor)"
+}

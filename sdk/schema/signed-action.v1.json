@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/EmpowerTours/pq-agent-batch/sdk/schema/signed-action.v1.json",
+  "title": "pq-agent-batch signed action v1",
+  "description": "One ML-DSA-65 signed order, as produced by `pqagent sign` and accepted by the reference batcher. The signature covers `message` (133 bytes) = ORDER_TAG_V2 | chainId u64 | settlement | agentId u32 | nonce u64 | expiry u32 | modelHash | orderBytes, ORDER_TAG_V2 = keccak256(\"EmpowerTours.AgentOrder.v2\"). Consumers MUST re-derive orderBytes and message from the other fields and check sha256(publicKey) == pkHash before trusting them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "chainId", "settlement", "agentId", "nonce", "expiry", "modelHash", "pkHash", "order", "orderBytes", "message", "publicKey", "signature"],
+  "properties": {
+    "schema": { "const": "pq-agent-batch/signed-action/v1" },
+    "chainId": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615 },
+    "settlement": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "description": "BatchSettlementV2 address" },
+    "agentId": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+    "nonce": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615, "description": "must exceed the agent's on-chain lastNonce; a batch takes consecutive nonces per agent" },
+    "expiry": { "type": "integer", "minimum": 0, "maximum": 4294967295, "description": "unix seconds; all orders of one agent in one batch share it" },
+    "modelHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$", "description": "keccak256 of the model artifact" },
+    "pkHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$", "description": "sha256(publicKey); must be an authorized key of agentId in AgentRegistry" },
+    "order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side", "amountIn", "minAmountOut"],
+      "properties": {
+        "side": { "enum": ["buy", "sell"], "description": "buy = spend quote for base (flags 1); sell = sell base for quote (flags 0)" },
+        "amountIn": { "type": "string", "pattern": "^[1-9][0-9]{0,28}$", "description": "token base units, 0 < x < 2^96" },
+        "minAmountOut": { "type": "string", "pattern": "^(0|[1-9][0-9]{0,28})$", "description": "token base units, < 2^96" }
+      }
+    },
+    "orderBytes": { "type": "string", "pattern": "^0x[0-9a-f]{50}$", "description": "flags u8 | amountIn u96 | minAmountOut u96" },
+    "message": { "type": "string", "pattern": "^0x[0-9a-f]{266}$", "description": "the exact 133 signed bytes" },
+    "publicKey": { "type": "string", "pattern": "^0x[0-9a-f]{3904}$", "description": "encoded ML-DSA-65 verifying key (1952 bytes)" },
+    "signature": { "type": "string", "pattern": "^0x[0-9a-f]{6618}$", "description": "ML-DSA-65 signature (3309 bytes), FIPS 204, empty context" }
+  }
+}

@@ -17,6 +17,9 @@ import { ISP1Verifier } from "../src/interfaces/ISP1Verifier.sol";
 ///                   PK_A, PK_B (agent pkHashes; default: the repo's deterministic TEST keys)
 ///                   FEE_PER_ACTION (native MON fee per settled order; default 0 = fees off). When set, both
 ///                   TEST agents also get FEE_DEPOSIT (default 1 MON) of prepaid native fee balance.
+///                   OPEN_REGISTRATION (bool, default false): let anyone selfRegister() (used by the SDK/CLI);
+///                   SELF_CAP_BASE / SELF_CAP_QUOTE (self-registration max caps; default 10k / 20k tokens);
+///                   REGISTRATION_FEE (one-time MON fee on top of the 1 MON bond; default 0).
 /// Monad: broadcast with --gas-estimate-multiplier 300 (forge under-estimates Monad storage cost).
 contract DeploySolonet is Script {
     bytes32 constant TEST_PK_A = 0x8b1551c421b573beeaebb39debb1e0371e13c93155a7a5be60b29dd691095b05;
@@ -67,6 +70,12 @@ contract DeploySolonet is Script {
             bs.setFeeConfig(0, feePerAction, 0, true);   // deployer is the registry admin
             bs.depositFeeNative{ value: dep }(idA);
             bs.depositFeeNative{ value: dep }(idB);
+        }
+        uint96 regFee = uint96(vm.envOr("REGISTRATION_FEE", uint256(0)));
+        if (regFee != 0) reg.setRegistrationFee(regFee);
+        if (vm.envOr("OPEN_REGISTRATION", false)) {
+            reg.setOpenRegistration(true, uint128(vm.envOr("SELF_CAP_BASE", uint256(10_000e18))),
+                uint128(vm.envOr("SELF_CAP_QUOTE", uint256(20_000e18))));
         }
         vm.stopBroadcast();
         console.log("VERIFIER", verAddr);

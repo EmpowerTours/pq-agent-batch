@@ -197,13 +197,21 @@ contract AgentFeesTest is V2Fixture {
         vm.deal(dev, 5 ether);
         vm.prank(dev);
         vm.expectRevert(AgentRegistry.RegistrationClosed.selector);
-        reg.selfRegister{ value: 2 ether }(keccak256("dev-key"));
+        reg.selfRegister{ value: 2 ether }(keccak256("dev-key"), 0, 0);
         vm.startPrank(admin);
         reg.setRegistrationFee(0.25 ether);
         reg.setOpenRegistration(true, 10e18, 20e18);
         vm.stopPrank();
         vm.prank(dev);
-        uint32 id = reg.selfRegister{ value: 1.25 ether }(keccak256("dev-key"));
+        vm.expectRevert(abi.encodeWithSelector(AgentRegistry.CapsTooHigh.selector, uint128(11e18), uint128(0), uint128(10e18), uint128(20e18)));
+        reg.selfRegister{ value: 1.25 ether }(keccak256("dev-key"), 11e18, 0);
+        vm.prank(dev);
+        uint32 id2 = reg.selfRegister{ value: 1.25 ether }(keccak256("dev-key-2"), 5e18, 7e18);
+        (,,,, uint128 c2B, uint128 c2Q) = reg.agents(id2);
+        assertEq(c2B, 5e18);
+        assertEq(c2Q, 7e18);
+        vm.prank(dev);
+        uint32 id = reg.selfRegister{ value: 1.25 ether }(keccak256("dev-key"), 0, 0);   // 0 = maximum
         (address op, bool active,, uint96 stake, uint128 cB, uint128 cQ) = reg.agents(id);
         assertEq(op, dev);
         assertTrue(active);

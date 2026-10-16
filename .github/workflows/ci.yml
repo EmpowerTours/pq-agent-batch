@@ -37,6 +37,26 @@ jobs:
         working-directory: zk-batch
         run: cargo test -p agent-batch-lib --release
 
+  sdk:
+    name: SDK/CLI (golden vectors + anvil end-to-end)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.5
+      - name: Install pinned contract dependencies
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std@v1.16.1 --shallow --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --shallow --no-git
+      - name: cargo test (keys, pkHash, encoding, proved-batch golden vectors, batcher rules, keystore)
+        working-directory: sdk
+        run: cargo test --release --locked
+      - name: pqagent CLI against a local anvil (init -> register -> fund -> sign -> status -> batch)
+        run: bash sdk/tests/anvil_e2e.sh sdk/target/release/pqagent
+
   guest-execute:
     name: SP1 guest execute (N=10) + tamper rejection
     runs-on: ubuntu-latest
@@ -55,6 +75,11 @@ jobs:
       - name: Execute N=10 (cycle count)
         working-directory: zk-batch
         run: ./target/release/batch --execute -n 10 | grep -E "RESULT|exit_code"
+      - name: SDK-signed golden batch (pqagent batcher output) executes and commits the proved digest
+        working-directory: zk-batch
+        run: |
+          ./target/release/batch --execute --input ../sdk/tests/fixtures/batch-input-b1-n10.json | tee sdk.log | grep -E "RESULT|exit_code"
+          grep -q "committed=0xbfb669f4e723f4717d8c1041faec9860f40c08ff4465ccb2c200d8a96ddea12c" sdk.log
       - name: Tampered batch must be rejected
         working-directory: zk-batch
         run: |

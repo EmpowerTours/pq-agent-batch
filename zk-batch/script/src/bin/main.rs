@@ -3,6 +3,7 @@
 //! execute the guest (cycle counts) or prove it.
 //!   cargo run --release -- --execute -n 100
 //!   cargo run --release -- --prove -n 10    (needs a large-RAM machine; see README)
+//!   cargo run --release -- --execute --input batch-input.json   (batch from the SDK's `pqagent batch`)
 use agent_batch_lib::{batch_digest, order_message, parse_batch, verify_batch};
 use alloy_primitives::keccak256;
 use clap::Parser;
@@ -26,14 +27,43 @@ struct Args {
     #[arg(long)] tamper: bool,
     /// --prove: directory for proof artifacts (proof.bin, groth16-batch-fixture.json)
     #[arg(long, default_value = "proof-out")] proof_dir: String,
+    /// use a prepared batch (sdk `pqagent batch` output, schema pq-agent-batch/batch-input/v1)
+    /// instead of the built-in TEST-key batch; overrides -n/--chain-id/--settlement/--batch-id
+    #[arg(long)] input: Option<String>,
+}
+
+/// (chain_id, settlement, batch_id, batch, per-group pks, sigs) from a batch-input.json file.
+fn load_input(path: &str) -> (u64, [u8; 20], u64, Vec<u8>, Vec<Vec<u8>>, Vec<Vec<u8>>) {
+    let v: serde_json::Value = serde_json::from_slice(&std::fs::read(path).expect("read --input")).expect("parse --input");
+    assert_eq!(v["schema"], "pq-agent-batch/batch-input/v1", "unknown --input schema");
+    let hx = |x: &serde_json::Value| hex::decode(x.as_str().expect("hex string").trim_start_matches("0x")).expect("hex");
+    let mut settlement = [0u8; 20];
+    settlement.copy_from_slice(&hx(&v["settlement"]));
+    let (mut pks, mut sigs) = (vec![], vec![]);
+    for g in v["groups"].as_array().expect("groups") {
+        pks.push(hx(&g["publicKey"]));
+        for s in g["signatures"].as_array().expect("signatures") { sigs.push(hx(s)); }
+    }
+    (v["chainId"].as_u64().unwrap(), settlement, v["batchId"].as_u64().unwrap(), hx(&v["batch"]), pks, sigs)
 }
 
 fn main() {
     sp1_sdk::utils::setup_logger();
     let a = Args::parse();
     assert!(a.execute != a.prove, "specify exactly one of --execute / --prove");
+    let mut a = a;
     let mut settlement = [0u8; 20];
     settlement.copy_from_slice(&hex::decode(a.settlement.trim_start_matches("0x")).unwrap());
+    let (mut batch, groups, gpks, sigs, n, base_in, quote_in, pk_hashes) = if let Some(path) = a.input.clone() {
+        let (cid, st, bid, batch, gpks, sigs) = load_input(&path);
+        (a.chain_id, settlement, a.batch_id) = (cid, st, bid);
+        a.settlement = hex::encode(st);
+        let groups = parse_batch(&batch).expect("--input: malformed batch");
+        let n = groups.iter().map(|g| g.count as u64).sum::<u64>();
+        let hashes = gpks.iter().map(|p| hex::encode(Sha256::digest(p))).collect::<Vec<_>>();
+        println!("--input {}: {} orders in {} groups", path, n, groups.len());
+        (batch, groups, gpks, sigs, n, 0u128, 0u128, hashes)
+    } else {
 
     let keys: Vec<_> = (1u8..=2).map(|i| {
         let seed = B32::from(keccak256([b"EmpowerTours test agent seed ".as_slice(), &[i]].concat()).0);
@@ -76,6 +106,9 @@ fn main() {
         }
     }
     let gpks: Vec<Vec<u8>> = used.iter().map(|&u| pks[u].clone()).collect();
+    let hashes = pks.iter().map(|p| hex::encode(Sha256::digest(p))).collect::<Vec<_>>();
+    (batch, groups, gpks, sigs, n, base_in, quote_in, hashes)
+    };
     if a.tamper { let l = batch.len(); batch[l - 13] ^= 1; } // low byte of last amountIn
     let expected = batch_digest(a.chain_id, settlement, a.batch_id, &batch);
     match verify_batch(a.chain_id, settlement, a.batch_id, &batch, &gpks, &sigs) {
@@ -87,7 +120,7 @@ fn main() {
         std::fs::write(p, serde_json::to_string_pretty(&serde_json::json!({
             "chain_id": a.chain_id, "settlement": a.settlement, "batch_id": a.batch_id, "n": n,
             "base_in": base_in.to_string(), "quote_in": quote_in.to_string(),
-            "pk_hashes": pks.iter().map(|p| hex::encode(Sha256::digest(p))).collect::<Vec<_>>(),
+            "pk_hashes": pk_hashes,
             "batch": hex::encode(&batch), "digest": hex::encode(expected) })).unwrap()).unwrap();
     }
 

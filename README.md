@@ -120,7 +120,7 @@ sequenceDiagram
 | **Insufficient balance** | **The whole batch reverts** with `InsufficientFeeBalance(agentId, balance, fee)`. Nothing settles for free, and nothing is skipped silently. Excluding an agent means re-proving, so the service must check `feeQuote(agentId, n)` against `feeAccount(agentId)` *before* proving and leave short agents out. `settle_proof.py` repeats this check before sending. |
 | **Withdrawals** | Two steps: `requestFeeWithdrawal` → `executeFeeWithdrawal` after `feeWithdrawDelay` (set by the admin, at most 7 days). Until then the balance still pays for batches, so an owner cannot grief a batch that is already proved by pulling funds just before settlement. The payout is `min(requested, balance at execution)`. |
 | **Treasury** | Fees accrue per token in the contract. `sweepFees(token)` is permissionless and sends them to `registry.treasury()`, which the admin sets and which is intended to be a multisig. Accrual instead of a transfer per batch means a treasury contract can never make a batch revert. |
-| **Registration** | `msg.value` = `registrationFee` (one-time, non-refundable, accrued for the treasury, swept by `sweepRegistrationFees()`) + **bond** (`stake`, at least `minStake`, refunded on `retire`). The admin can also open `selfRegister(pkHash)`, where msg.sender becomes the operator and gets the admin's default caps. `isAuthorized(agentId, pkHash)` is a one-call check for apps. |
+| **Registration** | `msg.value` = `registrationFee` (one-time, non-refundable, accrued for the treasury, swept by `sweepRegistrationFees()`) + **bond** (`stake`, at least `minStake`, refunded on `retire`). The admin can also open `selfRegister(pkHash, capBaseIn, capQuoteIn)`: msg.sender becomes the operator, and the requested caps must not exceed the admin's maximums (`CapsTooHigh`; 0 = the maximum). `isAuthorized(agentId, pkHash)` is a one-call check for apps. |
 
 ### How owners know when to top up
 - **Threshold alert.** The owner sets `setFeeAlert(agentId, threshold)`. When a settlement (or a withdrawal) takes the balance below the threshold, the contract emits `LowFeeBalance(agentId, balance, threshold)` **once**. Later batches stay quiet until the balance is back at or above the threshold (by deposit, top-up or a threshold change). The next crossing then alerts again. Setting a threshold above the current balance alerts immediately.
@@ -145,20 +145,36 @@ Measured with `eth_estimateGas` on Solonet against the live settlement. The comm
 
 The fee path costs one cold read of each agent's fee account, one cold read of the token's config-and-accrual slot, one write per agent, one accrual write and a `FeesCharged` event. That works out to about **428 gas per order at N=100**, and the cost is per agent, not per order. Monad prices a cold storage read at 8,100 gas, and those three reads make up most of the delta. With fees off, the account reads still happen, which is why the fees-off row costs +28,917; there is no extra shortcut for that case. In forge, at Ethereum storage prices, the same settle costs 423,552 → 450,318 gas excluding intrinsic and calldata (`test/RealGroth16Fees.t.sol`).
 
+## Developer SDK and CLI (`pqagent`)
+[`sdk/`](sdk/README.md) is a Rust crate and CLI. With it, a team can register an agent and submit signed actions in a few commands:
+
+```bash
+pqagent init --rpc $RPC --settlement $SETTLEMENT --model-file model.bin   # ML-DSA-65 key (0600 / encrypted), pkHash, modelHash
+pqagent register --operator-key-file op.key --cap-base 2000e18            # selfRegister, pays fee + bond, prints the agent id
+pqagent fund --operator-key-file op.key --amount 0.05mon                  # prepaid fee balance (+ balance / alert / deposit)
+pqagent sign --sell --amount 10e18 --min-out 1 --out actions/             # signed-action JSON (schema in sdk/schema/)
+pqagent status                                                             # isAuthorized + agent info
+pqagent batch --actions actions/ --batch-id 1 --out batch-input.json      # reference batcher -> zk-batch/script --input
+```
+
+- **Parity with the guest.** Signing reuses the guest's own encoding code. CI checks that the SDK reproduces both proved Solonet batches byte for byte, runs the whole CLI against a local anvil, and executes an SDK-built batch in the SP1 guest.
+- **Real run on Solonet.** A self-registered agent 3 signed three orders. The contract's `batchDigest` matched the SDK's digest, and the guest accepted the batch: [transcript](results/solonet/sdk-e2e/transcript.txt). Proving and settling an SDK-registered agent's batch is the next step.
+
 ## Repository layout
 | Path | What |
 |---|---|
 | `zk-batch/program` | SP1 guest: parses the packed batch, checks `sha256(pk) == pkHash` once per agent, verifies every ML-DSA-65 signature, and commits `abi.encode(batchDigest)`. |
 | `zk-batch/lib` | Packed format, signed-message builder and digest. Matches the Solidity byte for byte, with unit tests. |
-| `zk-batch/script` | Host: derives 2 deterministic TEST keys, builds and signs a batch, then `--execute` (cycle count) or `--prove` (Groth16 plus fixture JSON). Also `vkey`. |
+| `zk-batch/script` | Host: derives 2 deterministic TEST keys, builds and signs a batch (or loads one with `--input batch-input.json` from `pqagent batch`), then `--execute` (cycle count) or `--prove` (Groth16 plus fixture JSON). Also `vkey`. |
 | `zk-batch/vendor/keccak` | keccak crate patched to use SP1's keccak precompile (MIT/Apache-2.0, upstream licences included). |
 | `contracts/src/BatchSettlementV2.sol` | Settlement: one proof per batch, packed calldata, nonce replay protection, one storage slot per agent, netting against the AMM. |
 | `contracts/src/AgentFees.sol` | Prepaid per-agent fee balances (MON or ERC20), per-action fees with a per-batch cap, treasury accrual, low-balance alerts, permissionless top-up, delayed withdrawals. Inherited by the settlement. |
 | `contracts/src/AgentRegistry.sol` | Agents with ML-DSA key commitments, refundable bond, registration fee, optional self-registration, per-batch caps, kill switch, admin and guardian roles, treasury, `isAuthorized`. |
+| `sdk/` | `pqagent` Rust SDK and CLI: agent keys and keystore, signed actions with a JSON schema, registry/fee calls, reference batcher, golden and anvil end-to-end tests ([README](sdk/README.md)). |
 | `contracts/src/dex/` | MiniAMM and MockToken (testnet only), from quantum-portfolio. |
 | `contracts/bytecode/` | SP1 v6.1.0 Groth16 verifier bytecode, byte-identical to Succinct's Monad mainnet deployment ([provenance](contracts/bytecode/README.md)). |
 | `contracts/test/` | 64 forge tests (see below). Everything under `helpers/` (mock verifier, reentrant tokens) is test-only and **must not be deployed**. |
-| `contracts/script/DeploySolonet.s.sol` | Deploys verifier (optional), pool (optional), registry and settlement, registers the TEST agents and funds them. |
+| `contracts/script/DeploySolonet.s.sol` | Deploys verifier (optional), pool (optional), registry and settlement, registers the TEST agents and funds them. Optional fees, registration fee and open self-registration (`OPEN_REGISTRATION`). |
 | `contracts/script/settle_proof.py` | Settles a prove-workflow fixture on a node after pre-flight checks, including the fee balance. |
 | `contracts/script/measure_fee_gas.py` | Measures the fee path's gas with the real proofs on Solonet (state overrides, nothing sent). |
 | `watcher/` | `fee_watcher.py`: low-fee-balance alerts → stdout / webhook / optional `topUp`. |
@@ -188,7 +204,9 @@ cargo test -p agent-batch-lib --release        # packed-format parser tests
 cargo build --release
 ./target/release/batch --execute -n 100        # cycle count
 ./target/release/batch --execute -n 4 --tamper # must be rejected (exit 2)
+./target/release/batch --execute --input ../sdk/tests/fixtures/batch-input-b1-n10.json  # SDK-built batch
 ```
+SDK: `cd sdk && cargo test --release && bash tests/anvil_e2e.sh` (needs foundry). See [sdk/README.md](sdk/README.md).
 
 ### 3. Generate a real Groth16 proof (GitHub Actions, free runner)
 ```bash
@@ -221,6 +239,7 @@ Before sending, `settle_proof.py` checks the chain id, the bound settlement addr
 - **Replay.** Per-agent nonces only; there is no batch nullifier. `batchId` is bound into the digest but is not required to be unique on chain. Batches must be settled in nonce order.
 - **Throughput of free runners.** About **200 orders** is the practical limit of one free 6-hour GitHub job. This is an estimate, from a linear fit to the two runs: ~34 min fixed plus ~1.3 min per order, plus ~10 min of setup and build. Memory peaked at ~14.9 GiB at both N=10 and N=100 (16 GB plus swap), so time is the limit, not RAM.
 - **Shared decoder.** The contract and the guest decode the packed format with identical strict rules, covered by malformed-input tests on both sides, a no-panic fuzz test and a parity fixture.
+- **SDK keystore.** `pqagent` keeps the agent's ML-DSA seed in `.pqagent/key.json`: mode 0600, refused if others can read it, and encrypted with Argon2id + ChaCha20-Poly1305 when `PQAGENT_PASSPHRASE` is set. The operator's EVM key is read per call and never stored. There is no hardware or remote signer support yet.
 - **TEST keys.** The ML-DSA keys come from public seeds in `zk-batch/script`, so anyone can sign as these agents. Never register them on a real deployment.
 
 ## Roadmap
@@ -228,7 +247,7 @@ Before sending, `settle_proof.py` checks the chain id, the bound settlement addr
 - Larger batches beyond one runner: split the batch across runners and aggregate with SP1 recursion, or use a self-hosted GPU prover.
 - Per-order expiry and model hash, if it pays for its calldata.
 - Real liquidity: route the residual to a live Monad DEX, as quantum-portfolio does with Uniswap v3.
-- Relayer and watcher service: collect signed orders, check fee balances, trigger proving, and settle automatically (the fee watcher is the first piece).
+- Relayer and watcher service: collect signed orders, check fee balances, trigger proving, and settle automatically. The fee watcher and `pqagent batch` are the first pieces. Next: a `prove.yml` input for SDK batches, and a long-running relayer.
 - Proof-of-agency: model hash and limits in the registry, an `isAuthorized` API for apps, and a delay for trading-balance withdrawals.
 - A post-quantum transaction path for the relayer account, once Monad supports account abstraction or PQ signatures.
 - External audit before any mainnet value.

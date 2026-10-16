@@ -38,7 +38,7 @@ contract AgentRegistry {
     uint96  public registrationFee;          // one-time, non-refundable, on top of the bond
     uint256 public accruedRegistrationFees;  // owed to the treasury
     bool    public openRegistration;         // anyone may selfRegister()
-    uint128 public defaultCapBaseIn;         // caps for self-registered agents
+    uint128 public defaultCapBaseIn;         // maximum (and default) caps for self-registered agents
     uint128 public defaultCapQuoteIn;
 
     event AgentRegistered(uint32 indexed agentId, address operator, bytes32 pkHash, uint96 stake);
@@ -63,6 +63,7 @@ contract AgentRegistry {
     error UnknownKey(uint32 agentId, bytes32 pkHash);
     error StakeTooLow(uint256 sent, uint256 min);
     error RegistrationClosed();
+    error CapsTooHigh(uint128 capBaseIn, uint128 capQuoteIn, uint128 maxBaseIn, uint128 maxQuoteIn);
     error LastKey();
     error ZeroValue();
     error TransferFailed();
@@ -98,10 +99,14 @@ contract AgentRegistry {
     }
 
     /// @notice Permissionless registration (only while `openRegistration`): msg.sender becomes the
-    ///         operator, caps are the admin's defaults. Same fee + bond rule as registerAgent.
-    function selfRegister(bytes32 pkHash) external payable returns (uint32 id) {
+    ///         operator. Requested caps may not exceed the admin's self-registration maximums
+    ///         (`defaultCapBaseIn/QuoteIn`); 0 means "the maximum". Same fee + bond rule as registerAgent.
+    function selfRegister(bytes32 pkHash, uint128 capBaseIn, uint128 capQuoteIn) external payable returns (uint32 id) {
         if (!openRegistration) revert RegistrationClosed();
-        return _register(msg.sender, pkHash, defaultCapBaseIn, defaultCapQuoteIn);
+        uint128 maxB = defaultCapBaseIn;
+        uint128 maxQ = defaultCapQuoteIn;
+        if (capBaseIn > maxB || capQuoteIn > maxQ) revert CapsTooHigh(capBaseIn, capQuoteIn, maxB, maxQ);
+        return _register(msg.sender, pkHash, capBaseIn == 0 ? maxB : capBaseIn, capQuoteIn == 0 ? maxQ : capQuoteIn);
     }
 
     function _register(address operator, bytes32 pkHash, uint128 capBaseIn, uint128 capQuoteIn)

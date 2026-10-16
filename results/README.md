@@ -1,6 +1,6 @@
 # Results
 
-Real artifacts from the prove workflow and the live devnet settlements. All keys involved are deterministic **TEST** keys. Tx hashes are on a **local** Monad devnet (Solonet, chain 20143), so no public explorer has them.
+Real artifacts from the prove workflow and the live devnet settlements. All keys in the proved fixtures are deterministic **TEST** keys. The SDK run used a freshly generated agent key, which is kept outside the repo; only its public key and signatures are here. Tx hashes are on a **local** Monad devnet (Solonet, chain 20143), so no public explorer has them.
 
 | File | What |
 |---|---|
@@ -9,6 +9,8 @@ Real artifacts from the prove workflow and the live devnet settlements. All keys
 | `solonet/settlements.json` | Deployed addresses, both settlement receipts (tx, block, gas, calldata, per-call gas breakdown) |
 | `solonet/fee-gas.json` | Gas of the fee path on Monad pricing: real N=10/N=100 proofs, `eth_estimateGas` with state overrides against the live settlement (`contracts/script/measure_fee_gas.py`) |
 | `solonet/fee-watcher-demo.json` | End-to-end watcher run on Solonet: LowFeeBalance → webhook → keeper `topUp` |
+| `solonet/sdk-e2e/transcript.txt` | Manual `pqagent` CLI run on Solonet against a fresh stack with open self-registration (registry `0x28ef4A35…0ABF`, settlement `0x0e1AD57B…1D10`, reusing the verifier and pool above). Addresses in `deployment.json`. Steps: init → register (agent 3) → fund → deposit → alert → balance → sign ×3 → verify → status → batch. Then the contract's `batchDigest` and an SP1 guest execution of the batch. Not proved or settled. |
+| `solonet/sdk-e2e/batch-input.json` | The batcher output from that run (zk-batch host `--input` format) |
 | `proving.json` | Prove-step wall time and peak memory for both runs (`/usr/bin/time -v`) |
 | `history/gas-measurements.jsonl` | Every raw gas row collected while building the project, including the early **stand-in** verifier rows (S1–S6) and the real rows (`REAL-*`). Labels say which is which. |
 

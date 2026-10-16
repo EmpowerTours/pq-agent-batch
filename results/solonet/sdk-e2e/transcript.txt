@@ -1,0 +1,86 @@
+# started 2026-10-15 23:37:31 CST
+$ pqagent init --rpc http://localhost:8080 --settlement 0x0e1AD57BFb7E25656dE899571BE624559d871D10 --model-file model.bin
+initialised .pqagent (dir 0700, key.json 0600, encrypted: yes (PQAGENT_PASSPHRASE))
+pkHash     0xf5709900c093dd7e3de0eb0853ef25c3974a53176dc9d2a5e0f4377425a7195c
+modelHash  0xf9125c7e8a996f6a7905194e7bc81af6f638aee0d642ed980e10abdad0b9ccb5  (model.bin)
+publicKey  .pqagent/pubkey.hex (1952 bytes)
+chainId    20143  settlement 0x0e1ad57bfb7e25656de899571be624559d871d10
+next: pqagent register --operator-key-file <file>
+
+$ ls -la .pqagent
+total 24
+drwx------ 2 box box 4096 Oct 15 23:37 .
+drwxr-xr-x 3 box box 4096 Oct 15 23:37 ..
+-rw-r--r-- 1 box box   35 Oct 15 23:37 .gitignore
+-rw-r--r-- 1 box box  432 Oct 15 23:37 config.json
+-rw------- 1 box box  409 Oct 15 23:37 key.json
+-rw-r--r-- 1 box box 3905 Oct 15 23:37 pubkey.hex
+
+$ pqagent register --operator-key-file $OPERATOR_KEY_FILE --cap-base 2000e18 --cap-quote 4000e18
+registered agent 3  (operator 0xa0ee7a142d267c1f36714e4a8f75612f20a79720)
+  paid registrationFee 0.1 MON + bond 1 MON
+  caps per batch: base 2000  quote 4000
+  tx 0x0f5308aa98ae96e5ede803f598a754ff0fb7baeaeb72df5223a2d728fc82adea  gasUsed 179087
+AGENT_ID=3
+
+$ pqagent fund --operator-key-file $OPERATOR_KEY_FILE --amount 0.05mon
+deposited 0.05 (50000000000000000 units) to agent 3 fee balance
+  tx 0x20c530706d9740c1f23414066194eb0a8f0cdf500125f8a71d002c6458044284  gasUsed 82798 (limit 82798)
+fee balance 0.05 native MON  remainingActions 50
+
+(operator minted 1000 BASE + 1000 QUOTE from the MockToken faucets with cast)
+
+$ pqagent deposit --operator-key-file $OPERATOR_KEY_FILE --base 500e18 --quote 1000e18
+  tx 0x82f253c266370183834840b582a1e4735e3121b1eb56dd4c0d7d1103f1feb445  gasUsed 140304 (limit 140304)
+trading balances: base 500  quote 1000
+
+$ pqagent alert --operator-key-file $OPERATOR_KEY_FILE --threshold 0.01mon
+  tx 0x91fe14276156e51cb6a667a32b98a4a24a0b2a43da9be2e0af53248c896d5afd  gasUsed 56789 (limit 56789)
+alert threshold 0.01  low=false  auto top-up 0
+
+$ pqagent balance
+agent 3
+  fee token        #0 native MON
+  fee balance      0.05  (50000000000000000 units)
+  fee per action   0.001  (cap per batch none)
+  remainingActions 50
+  alert threshold  0.01  low=false
+  auto top-up      off
+  pending withdraw none
+  trading balances base 500  quote 1000
+  lastNonce        0
+
+$ pqagent sign --sell --amount 10e18 --min-out 1 --out actions
+signed agent 3 nonce 1 expiry 1792134000 sell 10000000000000000000 (minOut 1) -> actions/000003-000000000001.json
+
+$ pqagent sign --buy --amount 25e18 --min-out 1 --out actions
+signed agent 3 nonce 2 expiry 1792134000 buy 25000000000000000000 (minOut 1) -> actions/000003-000000000002.json
+
+$ pqagent sign --sell --amount 5e18 --min-out 1 --out actions
+signed agent 3 nonce 3 expiry 1792134000 sell 5000000000000000000 (minOut 1) -> actions/000003-000000000003.json
+
+$ pqagent verify actions/000003-000000000002.json
+OK: valid ML-DSA-65 signature; agent 3 nonce 2 pkHash 0xf5709900c093dd7e3de0eb0853ef25c3974a53176dc9d2a5e0f4377425a7195c
+
+$ pqagent status
+agent 3  authorized=true  active=true  killed=false
+  pkHash   0xf5709900c093dd7e3de0eb0853ef25c3974a53176dc9d2a5e0f4377425a7195c
+  operator 0xa0ee7a142d267c1f36714e4a8f75612f20a79720  stake 1 MON
+  caps     base 2000  quote 4000
+  nonces   lastNonce 0  next 4
+  fees     balance 0.05  remainingActions 50
+
+$ pqagent batch --actions actions --batch-id 1 --out batch-input.json
+batch 1: 3 orders in 1 groups, 157 bytes, digest 0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917
+  agent 3 nonces 1..3 feeQuote 3000000000000000
+wrote batch-input.json  -> prove: cd zk-batch/script && cargo run --release --bin batch -- --execute --input /workspace/solonet-sdk-e2e/batch-input.json
+
+$ cast call $SETTLEMENT 'batchDigest(uint64,bytes)(bytes32)' 1 <batch>
+0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917
+
+$ (cd zk-batch/script && RUST_LOG=warn ../target/release/batch --execute --input batch-input.json)
+--input batch-input.json: 3 orders in 1 groups
+N=3 batch=157B (1 groups) expected digest 0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917
+guest exit_code=0 committed_len=32
+RESULT N=3 cycles=4392306 cycles_per_order=1464102 committed=0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917 exec_secs=0.1
+# finished 2026-10-15 23:37:36 CST

@@ -1,0 +1,39 @@
+[package]
+name = "pqagent"
+version = "0.1.0"
+edition = "2021"
+description = "SDK + CLI for the pq-agent-batch proof-of-agency layer: ML-DSA-65 agent keys, signed actions, registry/fee calls, reference batcher"
+license = "MIT"
+publish = false
+
+[lib]
+name = "pqagent"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pqagent"
+path = "src/bin/pqagent.rs"
+
+[dependencies]
+agent-batch-lib = { path = "../zk-batch/lib" }
+ml-dsa = "=0.1.1"
+sha2 = "0.10"
+alloy-primitives = "1"
+alloy-sol-types = "1"
+alloy-consensus = { version = "2", features = ["k256"] }
+alloy-eips = "2"
+alloy-signer = "2"
+alloy-signer-local = "2"
+ureq = { version = "2", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hex = "0.4"
+clap = { version = "4", features = ["derive", "env"] }
+getrandom = "0.2"
+anyhow = "1"
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+zeroize = "1"
+
+[dev-dependencies]
+tempfile = "3"

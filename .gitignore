@@ -25,3 +25,6 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+# pqagent keystores (ML-DSA seeds): never commit
+.pqagent/
+**/.pqagent/
