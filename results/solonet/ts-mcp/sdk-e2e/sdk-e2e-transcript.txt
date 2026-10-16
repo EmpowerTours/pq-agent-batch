@@ -1,0 +1,83 @@
+# TS SDK (@empowertours/pqagent) end-to-end, started 2026-10-16 05:03:54 CST (America/Mexico_City, UTC-6) = 2026-10-16 11:03:54 UTC
+# rpc http://localhost:8080  settlement 0x0e1AD57BFb7E25656dE899571BE624559d871D10  operator 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
+
+$ Agent.init (fresh ML-DSA-65 key, encrypted keystore)
+pkHash    0xa60d7b75b76a2670c340d0d037dd8504b71280e8a62681977d71608cab61110d
+modelHash 0xb54d73b373dd00aad83466d5fa5ad38864a5c04e03d48bb1661c7aef6e3efcfc  (string:ts-sdk e2e model v1)
+dir mode 700  key.json mode 600  encrypted true
+
+$ registryInfo: registry 0x28ef4A35d2618A7EdDB46D7c71634B8eDA7c0ABF open=true fee 0.1 MON bond 1 MON agents 4
+
+$ agent.prepareRegister (unsigned tx any wallet can sign)
+{"chainId":20143,"to":"0x28ef4A35d2618A7EdDB46D7c71634B8eDA7c0ABF","value":"1100000000000000000","data":"0x4f5a81dfa60d7b75b76a2670c340d0d037dd8504b71280e8a62681977d71608cab61110d…","description":"selfRegister pkHash 0xa60d7b75b76a2670c340d0d037dd8504b71280e8a62681977d71608cab61110d caps base 2000000000000000000000 quote 4000000000000000000000; pays registrationFee 100000000000000000 + bond 1000000000000000000 wei"}
+
+$ agent.register (local operator key)
+registered agent 5  tx 0x3408034f953c386e43846bf698bbeee73d223a74a5967770282376cf7c07f199  gasUsed 160747
+  paid registrationFee 0.1 MON + bond 1 MON; caps base 2000 quote 4000
+
+$ agent.fund 0.05mon
+  tx 0x18aab21d536015e1a7daecd5d0d8a11025e3ee652420f213166484f8f3664fd0 gasUsed 82798  depositFeeNative(agent 5) 50000000000000000 wei MON
+
+$ faucet 1000 BASE + 1000 QUOTE (MockToken), agent.depositTrading 500 / 1000
+  tx 0xd5c94e4ccb3d917bedb2aaedb0489d1627e5adf3596978aadfa6505410916625 gasUsed 140304  deposit(agent 5, base 500000000000000000000, quote 1000000000000000000000)
+
+$ agent.setAlert 0.01mon
+  tx 0x1e483e36a0b111dd7926c81449e3f7970e264953ec617618c59b774ee6b28a95 gasUsed 56789  setFeeAlert(agent 5, 10000000000000000)
+
+$ agent.balance
+{
+  "agentId": 5,
+  "feeTokenIndex": 0,
+  "feeToken": "native MON",
+  "feeBalance": "50000000000000000",
+  "alertThreshold": "10000000000000000",
+  "low": false,
+  "feePerAction": "1000000000000000",
+  "maxFeePerBatch": "0",
+  "remainingActions": "50",
+  "autoTopUpAmount": "0",
+  "autoTopUpFrom": "0x0000000000000000000000000000000000000000",
+  "pendingWithdrawal": "none",
+  "tradingBase": "500000000000000000000",
+  "tradingQuote": "1000000000000000000000",
+  "lastNonce": 0
+}
+
+$ agent.sign x3 (+ one with a nonce gap)
+signed agent 5 nonce 1 expiry 1794744000 sell 10000000000000000000 -> actions/000005-000000000001.json
+signed agent 5 nonce 2 expiry 1794744000 buy 25000000000000000000 -> actions/000005-000000000002.json
+signed agent 5 nonce 3 expiry 1794744000 sell 5000000000000000000 -> actions/000005-000000000003.json
+signed nonce 9 (gap: must be deferred by the batcher)
+
+$ agent.status
+{
+  "agentId": 5,
+  "registered": true,
+  "operator": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+  "active": true,
+  "killed": false,
+  "keyCount": 1,
+  "stake": "1000000000000000000",
+  "capBaseIn": "2000000000000000000000",
+  "capQuoteIn": "4000000000000000000000",
+  "lastNonce": 0,
+  "nextNonce": 10,
+  "feeBalance": "50000000000000000",
+  "remainingActions": "50",
+  "tradingBase": "500000000000000000000",
+  "tradingQuote": "1000000000000000000000",
+  "pkHash": "0xa60d7b75b76a2670c340d0d037dd8504b71280e8a62681977d71608cab61110d",
+  "authorized": true
+}
+
+$ buildBatch (on-chain checks) batchId 2
+batch 2: 3 orders in 1 groups, 157 bytes, digest 0x5402e8a0dfe7a4968e8bfdc10526ecdeac3e9ae803905e3c3133f2f817ef1769
+  agent 5 nonces 1..3 feeQuote 3000000000000000
+  excluded 000005-000000000009.json: not contiguous with this batch's run (gap / different expiry, model or key / size limit); deferred
+contract batchDigest(2, batch) = 0x5402e8a0dfe7a4968e8bfdc10526ecdeac3e9ae803905e3c3133f2f817ef1769
+contract batchDigest == TS SDK digest: OK
+
+$ Rust `pqagent batch` over the same TS-signed actions (on-chain checks)
+Rust batch-input.json == TS batch-input.json byte for byte: true
+
+# finished 2026-10-16 05:04:02 CST (America/Mexico_City, UTC-6) = 2026-10-16 11:04:02 UTC  -- OK

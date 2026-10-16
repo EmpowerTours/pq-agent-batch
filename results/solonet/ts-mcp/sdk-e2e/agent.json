@@ -1,0 +1,10 @@
+{
+  "agentId": 5,
+  "pkHash": "0xa60d7b75b76a2670c340d0d037dd8504b71280e8a62681977d71608cab61110d",
+  "modelHash": "0xb54d73b373dd00aad83466d5fa5ad38864a5c04e03d48bb1661c7aef6e3efcfc",
+  "operator": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+  "registerTx": "0x3408034f953c386e43846bf698bbeee73d223a74a5967770282376cf7c07f199",
+  "batchId": 2,
+  "digest": "0x5402e8a0dfe7a4968e8bfdc10526ecdeac3e9ae803905e3c3133f2f817ef1769",
+  "contractDigest": "0x5402e8a0dfe7a4968e8bfdc10526ecdeac3e9ae803905e3c3133f2f817ef1769"
+}

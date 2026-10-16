@@ -160,6 +160,11 @@ pqagent batch --actions actions/ --batch-id 1 --out batch-input.json      # refe
 - **Parity with the guest.** Signing reuses the guest's own encoding code. CI checks that the SDK reproduces both proved Solonet batches byte for byte, runs the whole CLI against a local anvil, and executes an SDK-built batch in the SP1 guest.
 - **Proved and settled end to end on Solonet.** Agent 4 registered itself with the CLI, prepaid fees, and signed three orders. `pqagent batch` built the batch, and `prove.yml` (`batch_input` mode, free runner, 24 min of proving, 14.7 GiB peak) produced a real Groth16 proof under the pinned vkey. The proof settled live in tx `0xf7a30e8f…f166` for 1,306,844 gas. Agent 4's `lastNonce` went 0 → 3, its fee balance went 0.05 → 0.047 MON (3 × 0.001), the treasury accrued 0.003 MON, and the batch's net residual traded against the pool. Replaying the batch reverts with `NonceNotIncreasing`. See the [transcript](results/solonet/sdk-e2e/a4-b1-n3/transcript.txt) and [settlement record](results/solonet/sdk-e2e/a4-b1-n3/settlement.json). An earlier run with agent 3 checked the digest and guest execution only: [transcript](results/solonet/sdk-e2e/transcript.txt).
 
+## TypeScript SDK and MCP server
+- **[`sdk-ts/`](sdk-ts/README.md) (`@empowertours/pqagent`, not published).** This is the same API as the Rust SDK for the many agent builders who don't use Rust: keys and an encrypted keystore, register, fund, balance, alerts, sign, status and `isAuthorized`, verify, and the batcher. It uses viem and `@noble/post-quantum`. It matches the Rust SDK byte for byte, *including deterministic ML-DSA-65 signatures*. TS reproduces the proved N=10 batch input (all 10 signatures), the N=100 batch and digest, and the agent 4 batch settled live. Rust verifies TS signatures, the two batchers produce identical output, and the two SDKs share keystores.
+- **[`mcp/`](mcp/README.md) (`pqagent-mcp`).** This MCP server works over stdio and streamable HTTP, so any AI client can check or register an agent in one step: `is_authorized`, `agent_status`, `fee_balance` (with `remainingActions`), `fee_quote`, `verify_signed_action`, `batch_digest`, `build_batch`, `network_info`. The write tools (`prepare_register`, `prepare_fund`, `prepare_deposit`, `prepare_set_alert`) return **unsigned** transactions. Local stdio mode can also sign actions from a local keystore and, only when explicitly enabled, broadcast with a local operator key. HTTP mode refuses to start with an operator key. It includes setup for Claude Desktop, Claude Code, Cursor and VS Code.
+- **Live on Solonet** ([`results/solonet/ts-mcp/`](results/solonet/ts-mcp/README.md)). The TS SDK registered **agent 5**, funded it, signed 3 orders and batched them on chain. The contract's `batchDigest` equals the SDK digest, and the Rust batcher output is byte-identical. The MCP client returned agent 4's live status and fee balance over both stdio and HTTP. Then, in local mode, it registered **agent 6**, funded it and signed for it from inside MCP.
+
 ## Repository layout
 | Path | What |
 |---|---|
@@ -171,6 +176,8 @@ pqagent batch --actions actions/ --batch-id 1 --out batch-input.json      # refe
 | `contracts/src/AgentFees.sol` | Prepaid per-agent fee balances (MON or ERC20), per-action fees with a per-batch cap, treasury accrual, low-balance alerts, permissionless top-up, delayed withdrawals. Inherited by the settlement. |
 | `contracts/src/AgentRegistry.sol` | Agents with ML-DSA key commitments, refundable bond, registration fee, optional self-registration, per-batch caps, kill switch, admin and guardian roles, treasury, `isAuthorized`. |
 | `sdk/` | `pqagent` Rust SDK and CLI: agent keys and keystore, signed actions with a JSON schema, registry/fee calls, reference batcher, golden and anvil end-to-end tests ([README](sdk/README.md)). |
+| `sdk-ts/` | `@empowertours/pqagent` TypeScript SDK (viem + @noble/post-quantum), byte-identical to the Rust SDK; golden parity and Rust cross-check tests ([README](sdk-ts/README.md)). |
+| `mcp/` | `pqagent-mcp` MCP server (stdio + streamable HTTP): read-only registry, fee and verify tools, plus unsigned-tx builders ([README](mcp/README.md)). |
 | `contracts/src/dex/` | MiniAMM and MockToken (testnet only), from quantum-portfolio. |
 | `contracts/bytecode/` | SP1 v6.1.0 Groth16 verifier bytecode, byte-identical to Succinct's Monad mainnet deployment ([provenance](contracts/bytecode/README.md)). |
 | `contracts/test/` | 64 forge tests (see below). Everything under `helpers/` (mock verifier, reentrant tokens) is test-only and **must not be deployed**. |
@@ -207,6 +214,8 @@ cargo build --release
 ./target/release/batch --execute --input ../sdk/tests/fixtures/batch-input-b1-n10.json  # SDK-built batch
 ```
 SDK: `cd sdk && cargo test --release && bash tests/anvil_e2e.sh` (needs foundry). See [sdk/README.md](sdk/README.md).
+
+TypeScript SDK + MCP (Node 20+ to run, Node 22+ for the test runner): `npm ci && npm run build && npm test`, then `bash mcp/scripts/anvil-ci.sh` (needs foundry). See [sdk-ts/README.md](sdk-ts/README.md) and [mcp/README.md](mcp/README.md).
 
 ### 3. Generate a real Groth16 proof (GitHub Actions, free runner)
 ```bash

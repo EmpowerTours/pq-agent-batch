@@ -1,0 +1,298 @@
+server: pqagent-mcp 0.1.0: chain 20143 rpc http://localhost:8080 settlement 0x0e1AD57BFb7E25656dE899571BE624559d871D10 | streamable HTTP on http://127.0.0.1:3623/mcp (stateless, read-only + unsigned-tx tools)
+raw POST http://127.0.0.1:3623/mcp tools/call is_authorized -> HTTP 200: { "agentId": 4, "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602", "authorized": true, "reason": "registered, active, not killed, key is current", "registry": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf", "network": "Monad Solonet (local devnet)" }
+DNS-rebinding check: POST with Host: evil.example -> HTTP 403
+# streamable HTTP http://127.0.0.1:3623/mcp — 2026-10-16 05:05:46 CST (America/Mexico_City) = 2026-10-16 11:05:46 UTC
+server pqagent 0.1.0
+tools/list -> 12 tools: network_info, agent_status, is_authorized, fee_quote, fee_balance, verify_signed_action, batch_digest, build_batch, prepare_register, prepare_fund, prepare_deposit, prepare_set_alert
+  - network_info [read-only]: Chain, contract addresses and registry parameters this server reads from (Monad Solonet (local devnet), chain …
+  - agent_status [read-only]: Look up one registered agent: operator, active/killed, bond (stake), per-batch caps, number of keys, last sett…
+  - is_authorized [read-only]: The one-call trust check apps should use before acting on an agent's request: AgentRegistry.isAuthorized(agent…
+  - fee_quote [read-only]: Prepaid settlement fee the contract would charge agent `agentId` for a batch containing `actions` of its order…
+  - fee_balance [read-only]: An agent's prepaid settlement-fee account: balance, fee token, fee per action, remainingActions (how many more…
+  - verify_signed_action [read-only]: Verify a signed-action JSON (schema pq-agent-batch/signed-action/v1, as produced by `pqagent sign`, the TS SDK…
+  - batch_digest [read-only]: Compute the digest of a packed batch exactly as BatchSettlementV2.batchDigest and the SP1 proof's public value…
+  - build_batch [read-only]: Reference batcher: takes signed actions (v1 JSON), drops invalid / expired / stale / non-contiguous ones and (…
+  - prepare_register [read-only]: Build the AgentRegistry.selfRegister(pkHash, capBaseIn, capQuoteIn) transaction for a new agent key, with msg.…
+  - prepare_fund [read-only]: Build the transaction(s) that add to an agent's prepaid settlement-fee balance: depositFeeNative{value} when t…
+  - prepare_deposit [read-only]: Build approve (as needed) + BatchSettlementV2.deposit(agentId, base, quote) to fund the agent's trading balanc…
+  - prepare_set_alert [read-only]: Build setFeeAlert(agentId, threshold) (+ optional setAutoTopUp for ERC20 fee tokens): the contract emits LowFe…
+
+>>> tools/call network_info {}
+<<< {
+  "network": "Monad Solonet (local devnet)",
+  "rpc": "http://localhost:8080",
+  "registry": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+  "settlement": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+  "chainId": 20143,
+  "openRegistration": true,
+  "registrationFee": "100000000000000000",
+  "minStake": "1000000000000000000",
+  "maxCapBaseIn": "10000000000000000000000",
+  "maxCapQuoteIn": "20000000000000000000000",
+  "agentCount": 5,
+  "admin": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+  "treasury": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+  "base": "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629",
+  "quote": "0xe1DA8919f262Ee86f9BE05059C9280142CF23f48",
+  "batchProgramVKey": "0x0020ed358e42b85560d3f4114c57cd2b767e130766caf8bcaec7842799fd7d9d",
+  "feePerActionNative": "1000000000000000",
+  "maxFeePerBatchNative": "0",
+  "registrationFeeMon": "0.1",
+  "minStakeMon": "1",
+  "feePerActionMon": "0.001",
+  "server": {
+    "name": "pqagent",
+    "version": "0.1.0",
+    "transport": "http",
+    "localBroadcast": false,
+    "localSigning": false
+  }
+}
+
+>>> tools/call agent_status {"agentId":4,"pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602"}
+<<< {
+  "agentId": 4,
+  "registered": true,
+  "operator": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+  "active": true,
+  "killed": false,
+  "keyCount": 1,
+  "stake": "1000000000000000000",
+  "capBaseIn": "2000000000000000000000",
+  "capQuoteIn": "4000000000000000000000",
+  "lastNonce": 3,
+  "nextNonce": 4,
+  "feeBalance": "47000000000000000",
+  "remainingActions": "47",
+  "tradingBase": "497509050446342614695",
+  "tradingQuote": "1004963310473107412958",
+  "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+  "authorized": true,
+  "stakeMon": "1",
+  "feeBalanceMon": "0.047"
+}
+
+>>> tools/call is_authorized {"agentId":4,"pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602"}
+<<< {
+  "agentId": 4,
+  "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+  "authorized": true,
+  "reason": "registered, active, not killed, key is current",
+  "registry": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+  "network": "Monad Solonet (local devnet)"
+}
+
+>>> tools/call is_authorized {"agentId":4,"pkHash":"0x1111111111111111111111111111111111111111111111111111111111111111"}
+<<< {
+  "agentId": 4,
+  "pkHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+  "authorized": false,
+  "reason": "pkHash is not a current key of this agent",
+  "registry": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+  "network": "Monad Solonet (local devnet)"
+}
+
+>>> tools/call is_authorized {"agentId":999999,"pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602"}
+<<< {
+  "agentId": 999999,
+  "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+  "authorized": false,
+  "reason": "unknown agent id",
+  "registry": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+  "network": "Monad Solonet (local devnet)"
+}
+
+>>> tools/call fee_quote {"agentId":4,"actions":3}
+<<< {
+  "agentId": 4,
+  "actions": 3,
+  "fee": "3000000000000000",
+  "feeFormatted": "0.003",
+  "feeToken": "native MON",
+  "feeBalance": "47000000000000000",
+  "affordable": true
+}
+
+>>> tools/call fee_balance {"agentId":4}
+<<< {
+  "agentId": 4,
+  "feeTokenIndex": 0,
+  "feeToken": "native MON",
+  "feeBalance": "47000000000000000",
+  "alertThreshold": "10000000000000000",
+  "low": false,
+  "feePerAction": "1000000000000000",
+  "maxFeePerBatch": "0",
+  "remainingActions": "47",
+  "autoTopUpAmount": "0",
+  "autoTopUpFrom": "0x0000000000000000000000000000000000000000",
+  "pendingWithdrawal": "none",
+  "tradingBase": "497509050446342614695",
+  "tradingQuote": "1004963310473107412958",
+  "lastNonce": 3,
+  "feeBalanceFormatted": "0.047",
+  "alertThresholdFormatted": "0.01",
+  "topUpAdvice": "ok"
+}
+
+>>> tools/call verify_signed_action {"action":{"schema":"pq-agent-batch/signed-action/v1","chainId":20143,"settlement":"0x0e1ad57bfb7e25656de899571be624559d871d10","agentId":4,"nonce":1,"expiry":1794726000,"modelHash":"0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4","pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602","order":{"side":"sell","amountIn":"10000000000000000000","minAmountOut":"1"},"orderBytes":"0x00000000008ac7230489e80000000000000000000000000001","message":"0xaf17232b533743d5a75491aa97c853f63eae2896bf43b7d5de2dc0c9cd5264e60000000000004eaf0e1ad57bfb7e25656de899571be624559d871d…(268 chars)","publicKey":"0xfe689358da3fe9dfb4f9c8f2523357a0073aab396e848c8650b38739f7675ee243a37c1cb6dda074c6d15c6b119ee47822d745e1d473b5631e22c6…(3906 chars)","signature":"0x2083bd22fc69059e10ce3eef3dcf58cf9e833eb663dc6dd89c218f1ce136aa6285b98eb68afec695d5da29eb0e544e99061e900e2e1e6a2d1be4e3…(6620 chars)"}}
+<<< {
+  "valid": true,
+  "signatureValid": true,
+  "agentId": 4,
+  "nonce": 1,
+  "expiry": 1794726000,
+  "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+  "modelHash": "0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4",
+  "order": {
+    "side": "sell",
+    "amountIn": "10000000000000000000",
+    "minAmountOut": "1"
+  },
+  "chainId": 20143,
+  "settlement": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+  "onChain": {
+    "authorized": true,
+    "lastNonce": 3,
+    "nonceFresh": false,
+    "notExpired": true,
+    "chainTime": "1792148745",
+    "settleable": false
+  }
+}
+
+>>> tools/call verify_signed_action {"action":{"schema":"pq-agent-batch/signed-action/v1","chainId":20143,"settlement":"0x0e1ad57bfb7e25656de899571be624559d871d10","agentId":4,"nonce":1,"expiry":1794726000,"modelHash":"0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4","pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602","order":{"side":"sell","amountIn":"10000000000000000001","minAmountOut":"1"},"orderBytes":"0x00000000008ac7230489e80000000000000000000000000001","message":"0xaf17232b533743d5a75491aa97c853f63eae2896bf43b7d5de2dc0c9cd5264e60000000000004eaf0e1ad57bfb7e25656de899571be624559d871d…(268 chars)","publicKey":"0xfe689358da3fe9dfb4f9c8f2523357a0073aab396e848c8650b38739f7675ee243a37c1cb6dda074c6d15c6b119ee47822d745e1d473b5631e22c6…(3906 chars)","signature":"0x2083bd22fc69059e10ce3eef3dcf58cf9e833eb663dc6dd89c218f1ce136aa6285b98eb68afec695d5da29eb0e544e99061e900e2e1e6a2d1be4e3…(6620 chars)"},"checkOnChain":false}
+<<< {
+  "valid": false,
+  "reason": "orderBytes inconsistent with order"
+}
+
+>>> tools/call build_batch {"actions":[{"schema":"pq-agent-batch/signed-action/v1","chainId":20143,"settlement":"0x0e1ad57bfb7e25656de899571be624559d871d10","agentId":4,"nonce":1,"expiry":1794726000,"modelHash":"0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4","pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602","order":{"side":"sell","amountIn":"10000000000000000000","minAmountOut":"1"},"orderBytes":"0x00000000008ac7230489e80000000000000000000000000001","message":"0xaf17232b533743d5a75491aa97c853f63eae2896bf43b7d5de2dc0c9cd5264e60000000000004eaf0e1ad57bfb7e25656de899571be624559d871d…(268 chars)","publicKey":"0xfe689358da3fe9dfb4f9c8f2523357a0073aab396e848c8650b38739f7675ee243a37c1cb6dda074c6d15c6b119ee47822d745e1d473b5631e22c6…(3906 chars)","signature":"0x2083bd22fc69059e10ce3eef3dcf58cf9e833eb663dc6dd89c218f1ce136aa6285b98eb68afec695d5da29eb0e544e99061e900e2e1e6a2d1be4e3…(6620 chars)"},{"schema":"pq-agent-batch/signed-action/v1","chainId":20143,"settlement":"0x0e1ad57bfb7e25656de899571be624559d871d10","agentId":4,"nonce":2,"expiry":1794726000,"modelHash":"0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4","pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602","order":{"side":"buy","amountIn":"25000000000000000000","minAmountOut":"1"},"orderBytes":"0x01000000015af1d78b58c40000000000000000000000000001","message":"0xaf17232b533743d5a75491aa97c853f63eae2896bf43b7d5de2dc0c9cd5264e60000000000004eaf0e1ad57bfb7e25656de899571be624559d871d…(268 chars)","publicKey":"0xfe689358da3fe9dfb4f9c8f2523357a0073aab396e848c8650b38739f7675ee243a37c1cb6dda074c6d15c6b119ee47822d745e1d473b5631e22c6…(3906 chars)","signature":"0x90736e0971bdec5150bf09e877eedec8c7d09e52e4a9eecd2dac29451b96356aa18d31d5067fe7790131fc38bd9c3452f151256614d3779e653b7b…(6620 chars)"},{"schema":"pq-agent-batch/signed-action/v1","chainId":20143,"settlement":"0x0e1ad57bfb7e25656de899571be624559d871d10","agentId":4,"nonce":3,"expiry":1794726000,"modelHash":"0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4","pkHash":"0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602","order":{"side":"sell","amountIn":"5000000000000000000","minAmountOut":"1"},"orderBytes":"0x00000000004563918244f40000000000000000000000000001","message":"0xaf17232b533743d5a75491aa97c853f63eae2896bf43b7d5de2dc0c9cd5264e60000000000004eaf0e1ad57bfb7e25656de899571be624559d871d…(268 chars)","publicKey":"0xfe689358da3fe9dfb4f9c8f2523357a0073aab396e848c8650b38739f7675ee243a37c1cb6dda074c6d15c6b119ee47822d745e1d473b5631e22c6…(3906 chars)","signature":"0x80a62536ca39e68ac6a19fdf658d67c5475487fcd93939f2b83eaefabc471e8b70f36d07c95114ecde08b3f2827c08b1359f8708986992cc8a1202…(6620 chars)"}],"batchId":99,"onChainChecks":false}
+<<< {
+  "schema": "pq-agent-batch/batch-input/v1",
+  "chainId": 20143,
+  "settlement": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+  "batchId": 99,
+  "orders": 3,
+  "stateChecks": "offline (signatures and framing only)",
+  "batch": "0x00000004000300000000000000016af958707c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602ceba79c4a5c919dc37…(316 chars)",
+  "digest": "0x5b71bb678dfdf1780ed107ce5335e3c8d13456feb40aeff40475b5fd4b7ca4d5",
+  "groups": [
+    {
+      "agentId": 4,
+      "firstNonce": 1,
+      "count": 3,
+      "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+      "feeQuote": "0",
+      "publicKey": "0xfe689358da3fe9df… (1952 bytes)",
+      "signatures": "3 × 3309-byte ML-DSA-65 signatures (includeSignatures=true to return)"
+    }
+  ],
+  "excluded": []
+}
+
+>>> tools/call batch_digest {"batchId":1,"batch":"0x00000004000300000000000000016af958707c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602ceba79c4a5c919dc37…(316 chars)"}
+<<< {
+  "chainId": 20143,
+  "settlement": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+  "batchId": 1,
+  "digest": "0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670",
+  "contractDigest": "0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670",
+  "matchesContract": true,
+  "orders": 3,
+  "groups": [
+    {
+      "agentId": 4,
+      "count": 3,
+      "firstNonce": 1,
+      "expiry": 1794726000,
+      "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+      "modelHash": "0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4",
+      "orders": [
+        {
+          "side": "sell",
+          "amountIn": "10000000000000000000",
+          "minAmountOut": "1"
+        },
+        {
+          "side": "buy",
+          "amountIn": "25000000000000000000",
+          "minAmountOut": "1"
+        },
+        {
+          "side": "sell",
+          "amountIn": "5000000000000000000",
+          "minAmountOut": "1"
+        }
+      ]
+    }
+  ]
+}
+
+>>> tools/call batch_digest {"batchId":1,"batch":"0x00"}
+<<< ERROR error: malformed batch: truncated header at offset 0
+
+>>> tools/call prepare_register {"pkHash":"0xabababababababababababababababababababababababababababababababab","capBaseIn":"100e18","capQuoteIn":"200e18"}
+<<< {
+  "unsignedTransactions": [
+    {
+      "chainId": 20143,
+      "to": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+      "value": "1100000000000000000",
+      "data": "0x4f5a81dfabababababababababababababababababababababababababababababababab0000000000000000000000000000000000000000000000…(202 chars)",
+      "description": "selfRegister pkHash 0xabababababababababababababababababababababababababababababababab caps base 100000000000000000000 q…(218 chars)"
+    }
+  ],
+  "note": "Returns UNSIGNED transaction(s) { chainId, to, data, value (wei, decimal string) } in order; sign and send them with the…(264 chars)"
+}
+
+>>> tools/call prepare_fund {"agentId":4,"amount":"0.01mon"}
+<<< {
+  "unsignedTransactions": [
+    {
+      "chainId": 20143,
+      "to": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+      "value": "10000000000000000",
+      "data": "0x93fe922e0000000000000000000000000000000000000000000000000000000000000004",
+      "description": "depositFeeNative(agent 4) 10000000000000000 wei MON"
+    }
+  ],
+  "note": "Returns UNSIGNED transaction(s) { chainId, to, data, value (wei, decimal string) } in order; sign and send them with the…(264 chars)"
+}
+
+>>> tools/call prepare_deposit {"agentId":4,"base":"1e18"}
+<<< {
+  "unsignedTransactions": [
+    {
+      "chainId": 20143,
+      "to": "0xe1Aa25618fA0c7A1CFDab5d6B456af611873b629",
+      "value": "0",
+      "description": "approve settlement to pull 1000000000000000000 base",
+      "data": "0x095ea7b30000000000000000000000000e1ad57bfb7e25656de899571be624559d871d100000000000000000000000000000000000000000000000000de0b6b3a7640000"
+    },
+    {
+      "chainId": 20143,
+      "to": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+      "value": "0",
+      "description": "deposit(agent 4, base 1000000000000000000, quote 0)",
+      "data": "0x49529db000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000…(202 chars)"
+    }
+  ],
+  "note": "Returns UNSIGNED transaction(s) { chainId, to, data, value (wei, decimal string) } in order; sign and send them with the…(264 chars)"
+}
+
+>>> tools/call prepare_set_alert {"agentId":4,"threshold":"0.01mon"}
+<<< {
+  "unsignedTransactions": [
+    {
+      "chainId": 20143,
+      "to": "0x0e1ad57bfb7e25656de899571be624559d871d10",
+      "value": "0",
+      "description": "setFeeAlert(agent 4, 10000000000000000)",
+      "data": "0xdc6a8a580000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000002386f26fc10000"
+    }
+  ],
+  "note": "Returns UNSIGNED transaction(s) { chainId, to, data, value (wei, decimal string) } in order; sign and send them with the…(264 chars)"
+}
+
+HTTP + PQAGENT_MCP_ENABLE_SEND=1 -> exit 1: pqagent-mcp: PQAGENT_MCP_ENABLE_SEND is only allowed with the local stdio transport (never over HTTP)
