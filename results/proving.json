@@ -20,6 +20,17 @@
       "maxRSS_kB": 15570944,
       "maxRSS_GiB": 14.85,
       "userCpuSeconds": 29007.3
+    },
+    {
+      "n": 3,
+      "batchId": 1,
+      "mode": "--input (SDK agent 4 batch)",
+      "run": "https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38859711886",
+      "commit": "eb451b5",
+      "proveWallClock": "24:17",
+      "maxRSS_kB": 15400840,
+      "maxRSS_GiB": 14.69,
+      "userCpuSeconds": 4112.31
     }
   ]
 }

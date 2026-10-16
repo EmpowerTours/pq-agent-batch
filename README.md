@@ -158,7 +158,7 @@ pqagent batch --actions actions/ --batch-id 1 --out batch-input.json      # refe
 ```
 
 - **Parity with the guest.** Signing reuses the guest's own encoding code. CI checks that the SDK reproduces both proved Solonet batches byte for byte, runs the whole CLI against a local anvil, and executes an SDK-built batch in the SP1 guest.
-- **Real run on Solonet.** A self-registered agent 3 signed three orders. The contract's `batchDigest` matched the SDK's digest, and the guest accepted the batch: [transcript](results/solonet/sdk-e2e/transcript.txt). Proving and settling an SDK-registered agent's batch is the next step.
+- **Proved and settled end to end on Solonet.** Agent 4 registered itself with the CLI, prepaid fees, and signed three orders. `pqagent batch` built the batch, and `prove.yml` (`batch_input` mode, free runner, 24 min of proving, 14.7 GiB peak) produced a real Groth16 proof under the pinned vkey. The proof settled live in tx `0xf7a30e8f…f166` for 1,306,844 gas. Agent 4's `lastNonce` went 0 → 3, its fee balance went 0.05 → 0.047 MON (3 × 0.001), the treasury accrued 0.003 MON, and the batch's net residual traded against the pool. Replaying the batch reverts with `NonceNotIncreasing`. See the [transcript](results/solonet/sdk-e2e/a4-b1-n3/transcript.txt) and [settlement record](results/solonet/sdk-e2e/a4-b1-n3/settlement.json). An earlier run with agent 3 checked the digest and guest execution only: [transcript](results/solonet/sdk-e2e/transcript.txt).
 
 ## Repository layout
 | Path | What |
@@ -215,6 +215,12 @@ gh workflow run prove.yml -R EmpowerTours/pq-agent-batch \
 ```
 The proof is bound to `settlement`, `chain_id` and `batch_id`. Choose `nonce_base` so that both agents start above their on-chain `lastNonce`: agent 1 starts at `nonce_base+1` and agent 2 at `nonce_base+ceil(N/2)+1`. The artifact `groth16-batch-n<N>-b<batch_id>` contains `groth16-batch-fixture.json`, `proof.bin`, `vkey.txt` and `prove.log`. Expect ~47 min for N=10 and ~2 h 45 min for N=100.
 
+To prove a batch built by the SDK, commit the `pqagent batch` output and pass its repo path. `n`, `settlement`, `chain_id`, `batch_id` and `nonce_base` are then taken from the file:
+```bash
+gh workflow run prove.yml -R EmpowerTours/pq-agent-batch -f batch_input=results/solonet/sdk-e2e/a4-b1-n3/batch-input.json
+```
+The artifact is named `groth16-input-<dir>`. Sign with a `--ttl` that outlives proving plus settlement; the 3-order SDK batch took 33 min end to end on the runner.
+
 ### 4. Settle it on a local Monad devnet (Solonet)
 ```bash
 cd contracts
@@ -247,7 +253,7 @@ Before sending, `settle_proof.py` checks the chain id, the bound settlement addr
 - Larger batches beyond one runner: split the batch across runners and aggregate with SP1 recursion, or use a self-hosted GPU prover.
 - Per-order expiry and model hash, if it pays for its calldata.
 - Real liquidity: route the residual to a live Monad DEX, as quantum-portfolio does with Uniswap v3.
-- Relayer and watcher service: collect signed orders, check fee balances, trigger proving, and settle automatically. The fee watcher and `pqagent batch` are the first pieces. Next: a `prove.yml` input for SDK batches, and a long-running relayer.
+- Relayer and watcher service: collect signed orders, check fee balances, trigger proving, and settle automatically. The fee watcher, `pqagent batch` and `prove.yml`'s `batch_input` mode are the first pieces. Next: a long-running relayer.
 - Proof-of-agency: model hash and limits in the registry, an `isAuthorized` API for apps, and a delay for trading-balance withdrawals.
 - A post-quantum transaction path for the relayer account, once Monad supports account abstraction or PQ signatures.
 - External audit before any mainnet value.

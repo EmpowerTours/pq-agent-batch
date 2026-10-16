@@ -164,7 +164,7 @@ and lists each excluded file with its reason. Pool slippage is not simulated.
 
 ## Not covered yet
 
-- **No Groth16 proof or settlement of an SDK-registered agent's batch yet.** Proving takes ~47 min on a free runner, and `prove.yml` still builds the TEST-key batch; an `--input` option for it is the next step. The guest execution and the contract digest check above are what is verified today.
+- **Proving is slow and manual.** The SDK path is proved and settled end to end. Agent 4's batch was proved by `prove.yml -f batch_input=…` and settled on Solonet ([transcript](../results/solonet/sdk-e2e/a4-b1-n3/transcript.txt)). But each proof is a ~25 to 47 min manual workflow run on a free runner, so set `--ttl` well above that.
 - **Python/TypeScript.** No wrapper yet; the CLI's `--json` output is the integration surface.
 - **Relayer service.** `pqagent batch` is a one-shot reference tool, not a relayer daemon. There is no mempool, no automatic proving or settling, and no slippage simulation.
 - **Key management.** No key rotation commands yet (`addKey` / `revokeKey` exist on the registry), and no hardware or remote signer.

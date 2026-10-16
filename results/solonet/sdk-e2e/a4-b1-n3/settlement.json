@@ -1,0 +1,107 @@
+{
+  "note": "Real SP1 Groth16 proof (prove.yml on a free GitHub runner, --input mode) of a batch signed by SDK self-registered agent 4, settled on LOCAL Monad Solonet (chain 20143). Devnet tx; not on any public explorer.",
+  "chainId": 20143,
+  "registry": "0x28ef4A35d2618A7EdDB46D7c71634B8eDA7c0ABF",
+  "settlement": "0x0e1AD57BFb7E25656dE899571BE624559d871D10",
+  "verifier": "0x1C033Aa9B45bdb63A18208ed0FbF0F442B5886Fd",
+  "pool": "0x0C8E79F3534B00D9a3D4a856B665Bf4eBC22f2ba",
+  "vkey": "0x0020ed358e42b85560d3f4114c57cd2b767e130766caf8bcaec7842799fd7d9d",
+  "agent": {
+    "id": 4,
+    "operator": "0xa0ee7a142d267c1f36714e4a8f75612f20a79720",
+    "pkHash": "0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602",
+    "modelHash": "0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4",
+    "registerTx": "0x6381a46ae7ef5513fa98f0afa5c7b2efe88f505ba52178791d4f5179314698d7",
+    "fundTx": "0x3d2269c2ab236ea280d4aafef8a778f3dfe41cff47514997bd799f0ed900ebaa",
+    "depositTx": "0x6bfd6c73a0fa64e441b6f76cabd9b8dcddabc074cd6722595b46e447c2c1a6cd"
+  },
+  "batch": {
+    "batchId": 1,
+    "n": 3,
+    "nonces": "1..3",
+    "expiry": 1794726000,
+    "bytes": 157,
+    "digest": "0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670",
+    "guestCycles": 4393407
+  },
+  "prove": {
+    "run": "https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38859711886",
+    "runner": "ubuntu-latest (public repo: 4 vCPU / 16 GB) + 32 GB swap, SP1_PROVER=cpu, SP1 v6.3.1",
+    "runWallClock": "33m09s (06:10:24-06:43:33 UTC)",
+    "buildStep": "5m58s",
+    "proveStepWallClock": "24m17s",
+    "groth16Seconds": 1402,
+    "peakRssKB": 15400840,
+    "peakSwapSampledMB": 5473
+  },
+  "settle": {
+    "tx": "0xf7a30e8fc38ba375e74270cf82e634dff86166ad050dc31679f39230e108f166",
+    "block": 138552,
+    "status": 1,
+    "gasLimit_eth_estimateGas": 1306844,
+    "gasUsed": 1306844,
+    "gasPerOrder": 435614.7,
+    "calldataBytes": 708,
+    "calldataGas_16_4": 7572,
+    "topLevelCalls": [
+      {
+        "to": "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+        "gasUsed": 17529
+      },
+      {
+        "to": "0x1c033aa9b45bdb63a18208ed0fbf0f442b5886fd",
+        "gasUsed": 1063693
+      },
+      {
+        "to": "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+        "gasUsed": 8340
+      },
+      {
+        "to": "0xe1aa25618fa0c7a1cfdab5d6b456af611873b629",
+        "gasUsed": 24517
+      },
+      {
+        "to": "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+        "gasUsed": 58754
+      }
+    ],
+    "events": [
+      "BatchSettled(batchId=1, digest, orders=3, ...)",
+      "FeesCharged(batchId=1, token=0, 0.003 MON)",
+      "pool Sync/Swap",
+      "ERC20 Transfer x2"
+    ]
+  },
+  "onChainChecks": {
+    "agent4_lastNonce": {
+      "before": 0,
+      "after": 3
+    },
+    "agent4_feeBalance_wei": {
+      "before": "50000000000000000",
+      "after": "47000000000000000",
+      "charged": "3000000000000000 (3 x 0.001 MON)"
+    },
+    "accruedFees_token0_wei": {
+      "before": "0",
+      "after": "3000000000000000"
+    },
+    "agent4_trading": {
+      "base_before": "500000000000000000000",
+      "base_after": "497509050446342614695",
+      "quote_before": "1000000000000000000000",
+      "quote_after": "1004963310473107412958"
+    },
+    "settlement_tokens": {
+      "base_delta": "-2490949553657385305",
+      "quote_delta": "+4963310473107412958",
+      "note": "net residual of the 3 orders sold to the MiniAMM; equals pool deltas"
+    },
+    "pool": {
+      "base_delta": "+2490949553657385305",
+      "quote_delta": "-4963310473107412958"
+    },
+    "replay": "eth_call settle(1, same batch, same proof) reverts NonceNotIncreasing(4, 1, 3)",
+    "sdk_status_after": "agent 4 authorized=true lastNonce 3 next 4, fee balance 0.047 remainingActions 47"
+  }
+}

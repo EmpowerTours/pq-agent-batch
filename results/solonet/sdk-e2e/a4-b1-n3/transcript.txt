@@ -1,0 +1,157 @@
+# started 2026-10-16 00:06:48 CST (America/Mexico_City) (06:06:48 UTC)
+# box clock: America/Mexico_City; times are box-local CST unless marked UTC
+$ pqagent init --rpc http://localhost:8080 --settlement 0x0e1AD57BFb7E25656dE899571BE624559d871D10 --model-file model.bin
+initialised .pqagent (dir 0700, key.json 0600, encrypted: yes (PQAGENT_PASSPHRASE))
+pkHash     0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602
+modelHash  0xceba79c4a5c919dc37075f11a5d1b69adf64b71b7c078a68de14e60c8453a2b4  (model.bin)
+publicKey  .pqagent/pubkey.hex (1952 bytes)
+chainId    20143  settlement 0x0e1ad57bfb7e25656de899571be624559d871d10
+next: pqagent register --operator-key-file <file>
+
+$ pqagent register --operator-key-file $OPERATOR_KEY_FILE --cap-base 2000e18 --cap-quote 4000e18
+registered agent 4  (operator 0xa0ee7a142d267c1f36714e4a8f75612f20a79720)
+  paid registrationFee 0.1 MON + bond 1 MON
+  caps per batch: base 2000  quote 4000
+  tx 0x6381a46ae7ef5513fa98f0afa5c7b2efe88f505ba52178791d4f5179314698d7  gasUsed 160747
+AGENT_ID=4
+
+$ pqagent fund --operator-key-file $OPERATOR_KEY_FILE --amount 0.05mon
+deposited 0.05 (50000000000000000 units) to agent 4 fee balance
+  tx 0x3d2269c2ab236ea280d4aafef8a778f3dfe41cff47514997bd799f0ed900ebaa  gasUsed 82798 (limit 82798)
+fee balance 0.05 native MON  remainingActions 50
+
+(operator minted 1000 BASE + 1000 QUOTE from the MockToken faucets with cast)
+
+$ pqagent deposit --operator-key-file $OPERATOR_KEY_FILE --base 500e18 --quote 1000e18
+  tx 0x6bfd6c73a0fa64e441b6f76cabd9b8dcddabc074cd6722595b46e447c2c1a6cd  gasUsed 140304 (limit 140304)
+trading balances: base 500  quote 1000
+
+$ pqagent alert --operator-key-file $OPERATOR_KEY_FILE --threshold 0.01mon
+  tx 0xb58610e57805e4c525c60ef4a9c1d51c72080bba022eaeb0bafaa29029f7270a  gasUsed 56789 (limit 56789)
+alert threshold 0.01  low=false  auto top-up 0
+
+$ pqagent balance
+agent 4
+  fee token        #0 native MON
+  fee balance      0.05  (50000000000000000 units)
+  fee per action   0.001  (cap per batch none)
+  remainingActions 50
+  alert threshold  0.01  low=false
+  auto top-up      off
+  pending withdraw none
+  trading balances base 500  quote 1000
+  lastNonce        0
+
+$ pqagent sign --sell --amount 10e18 --min-out 1 --nonce 1 --ttl 2592000 --out actions
+signed agent 4 nonce 1 expiry 1794726000 sell 10000000000000000000 (minOut 1) -> actions/000004-000000000001.json
+
+$ pqagent sign --buy --amount 25e18 --min-out 1 --nonce 2 --ttl 2592000 --out actions
+signed agent 4 nonce 2 expiry 1794726000 buy 25000000000000000000 (minOut 1) -> actions/000004-000000000002.json
+
+$ pqagent sign --sell --amount 5e18 --min-out 1 --nonce 3 --ttl 2592000 --out actions
+signed agent 4 nonce 3 expiry 1794726000 sell 5000000000000000000 (minOut 1) -> actions/000004-000000000003.json
+
+$ pqagent verify actions/000004-000000000002.json
+OK: valid ML-DSA-65 signature; agent 4 nonce 2 pkHash 0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602
+
+$ pqagent status
+agent 4  authorized=true  active=true  killed=false
+  pkHash   0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602
+  operator 0xa0ee7a142d267c1f36714e4a8f75612f20a79720  stake 1 MON
+  caps     base 2000  quote 4000
+  nonces   lastNonce 0  next 4
+  fees     balance 0.05  remainingActions 50
+
+$ pqagent batch --actions actions --batch-id 1 --out batch-input.json
+batch 1: 3 orders in 1 groups, 157 bytes, digest 0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670
+  agent 4 nonces 1..3 feeQuote 3000000000000000
+wrote batch-input.json  -> prove: cd zk-batch/script && cargo run --release --bin batch -- --execute --input batch-input.json
+
+$ cast call $SETTLEMENT 'batchDigest(uint64,bytes)(bytes32)' 1 <batch>
+0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670
+
+$ (cd zk-batch/script && RUST_LOG=warn ../target/release/batch --execute --input batch-input.json)
+--input batch-input.json: 3 orders in 1 groups
+N=3 batch=157B (1 groups) expected digest 0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670
+guest exit_code=0 committed_len=32
+RESULT N=3 cycles=4393407 cycles_per_order=1464469 committed=0x2387776f9e3d3bdb5a4cd35d49b4cd35234c51609303f40cf5519c1633f15670 exec_secs=0.1
+
+# ---- CI proof (free GitHub runner, no prover network)
+$ gh workflow run prove.yml -f batch_input=results/solonet/sdk-e2e/a4-b1-n3/batch-input.json
+run https://github.com/EmpowerTours/pq-agent-batch/actions/runs/38859711886
+  queued 2026-10-16 00:10:24 CST, finished 00:43:33 CST (06:10:24-06:43:33 UTC), conclusion success
+  vkey 0x0020ed358e42b85560d3f4114c57cd2b767e130766caf8bcaec7842799fd7d9d (= pinned batchProgramVKey)
+  groth16 proof generated in 1402s
+  Elapsed (wall clock) time (h:mm:ss or m:ss): 24:17.23
+  Maximum resident set size (kbytes): 15400840
+
+# ---- live settlement on Solonet (gas limit = node eth_estimateGas)
+$ cat state-before
+agentState(4) base,quote,lastNonce: 500000000000000000000 [5e20] 1000000000000000000000 [1e21] 0 
+feeAccount(4) balance,threshold,token,low: 50000000000000000 [5e16] 10000000000000000 [1e16] 0 false 
+settlement MON balance: 2100000000000000000
+settlement BASE 401000000000000000000000  QUOTE 802000000000000000000000
+pool BASE 250090660060095720372219  QUOTE 499819433003439942019073
+accruedFees(0) before: 0
+
+$ SETTLEMENT=$SETTLEMENT KEY_FILE=$OPERATOR_KEY_FILE python3 contracts/script/settle_proof.py results/solonet/sdk-e2e/a4-b1-n3/groth16-batch-fixture.json
+agent 4: orders 3, nonces 1..3, on-chain lastNonce 0
+  fee 3000000000000000 (token 0), balance 50000000000000000 -> 47000000000000000
+pre-checks OK: chain, settlement, vkey, digest, nonces
+eth_estimateGas = 1306844  (N=3, 435615 gas/order)
+{
+ "label": "REAL-N3-live",
+ "N": 3,
+ "batchId": 1,
+ "tx": "0xf7a30e8fc38ba375e74270cf82e634dff86166ad050dc31679f39230e108f166",
+ "status": 1,
+ "gas_limit": 1306844,
+ "receipt_gasUsed": 1306844,
+ "per_order": 435614.6666666667,
+ "calldata_bytes": 708,
+ "calldata_gas_16_4": 7572,
+ "top_level_frames": [
+  [
+   "0x28ef4a35d2618a7eddb46d7c71634b8eda7c0abf",
+   17529
+  ],
+  [
+   "0x1c033aa9b45bdb63a18208ed0fbf0f442b5886fd",
+   1063693
+  ],
+  [
+   "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+   8340
+  ],
+  [
+   "0xe1aa25618fa0c7a1cfdab5d6b456af611873b629",
+   24517
+  ],
+  [
+   "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
+   58754
+  ]
+ ],
+ "vkey": "0x0020ed358e42b85560d3f4114c57cd2b767e130766caf8bcaec7842799fd7d9d",
+ "settlement": "0x0e1AD57BFb7E25656dE899571BE624559d871D10"
+}
+
+$ cat state-after
+agentState(4) base,quote,lastNonce: 497509050446342614695 [4.975e20] 1004963310473107412958 [1.004e21] 3 
+feeAccount(4) balance,threshold,token,low: 47000000000000000 [4.7e16] 10000000000000000 [1e16] 0 false 
+settlement MON balance: 2100000000000000000
+settlement BASE 400997509050446342614695  QUOTE 802004963310473107412958
+pool BASE 250093151009649377757524  QUOTE 499814469692966834606115
+accruedFees(0): 3000000000000000 [3e15]
+
+$ pqagent status
+agent 4  authorized=true  active=true  killed=false
+  pkHash   0x7c2c8a8b98c34df4a50204357e33cdd8155a64be11ac2fcd2c7b395d13271602
+  operator 0xa0ee7a142d267c1f36714e4a8f75612f20a79720  stake 1 MON
+  caps     base 2000  quote 4000
+  nonces   lastNonce 3  next 4
+  fees     balance 0.047  remainingActions 47
+
+$ cast call $SETTLEMENT 'settle(uint64,bytes,bytes)' 1 <same batch> <same proof>   # replay
+execution reverted: NonceNotIncreasing(agentId=4, firstNonce=1, last=3)
+# finished 2026-10-16 00:46:07 CST (America/Mexico_City) = 2026-10-16 06:46:07 UTC
