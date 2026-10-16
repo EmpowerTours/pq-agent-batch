@@ -1,4 +1,5 @@
-# started 2026-10-15 23:37:31 CST
+# started 2026-10-16 13:37:31 Asia/Shanghai (05:37:31 UTC)
+# (box clock was set to US Central; all times in this transcript converted to Asia/Shanghai)
 $ pqagent init --rpc http://localhost:8080 --settlement 0x0e1AD57BFb7E25656dE899571BE624559d871D10 --model-file model.bin
 initialised .pqagent (dir 0700, key.json 0600, encrypted: yes (PQAGENT_PASSPHRASE))
 pkHash     0xf5709900c093dd7e3de0eb0853ef25c3974a53176dc9d2a5e0f4377425a7195c
@@ -9,12 +10,12 @@ next: pqagent register --operator-key-file <file>
 
 $ ls -la .pqagent
 total 24
-drwx------ 2 box box 4096 Oct 15 23:37 .
-drwxr-xr-x 3 box box 4096 Oct 15 23:37 ..
--rw-r--r-- 1 box box   35 Oct 15 23:37 .gitignore
--rw-r--r-- 1 box box  432 Oct 15 23:37 config.json
--rw------- 1 box box  409 Oct 15 23:37 key.json
--rw-r--r-- 1 box box 3905 Oct 15 23:37 pubkey.hex
+drwx------ 2 box box 4096 Oct 16 13:37 .
+drwxr-xr-x 3 box box 4096 Oct 16 13:37 ..
+-rw-r--r-- 1 box box   35 Oct 16 13:37 .gitignore
+-rw-r--r-- 1 box box  432 Oct 16 13:37 config.json
+-rw------- 1 box box  409 Oct 16 13:37 key.json
+-rw-r--r-- 1 box box 3905 Oct 16 13:37 pubkey.hex
 
 $ pqagent register --operator-key-file $OPERATOR_KEY_FILE --cap-base 2000e18 --cap-quote 4000e18
 registered agent 3  (operator 0xa0ee7a142d267c1f36714e4a8f75612f20a79720)
@@ -83,4 +84,4 @@ $ (cd zk-batch/script && RUST_LOG=warn ../target/release/batch --execute --input
 N=3 batch=157B (1 groups) expected digest 0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917
 guest exit_code=0 committed_len=32
 RESULT N=3 cycles=4392306 cycles_per_order=1464102 committed=0xee6a2c4d700b2598b464c38d38dc6c143ab89dfe477016006afeb163fd2e3917 exec_secs=0.1
-# finished 2026-10-15 23:37:36 CST
+# finished 2026-10-16 13:37:36 Asia/Shanghai (05:37:36 UTC)
