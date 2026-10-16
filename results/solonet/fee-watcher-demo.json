@@ -1,0 +1,18 @@
+{
+  "note": "End-to-end run of watcher/fee_watcher.py against a fee-enabled BatchSettlementV2 on local Monad Solonet (chain 20143). The alert was triggered by setFeeAlert (threshold above balance), not by a settlement: the committed real proofs are bound to the older settlement address, so no proof exists for this deployment. Settlement-triggered alerts are covered by forge tests (test/AgentFees.t.sol, test/RealGroth16Fees.t.sol).",
+  "contracts": {
+    "settlement": "0x1910caFFE9B6fbe00D5289Fc0302734a861415aA",
+    "registry": "0x3BB1B490b93A523b0B0EF4028625D4ca6bc33e23",
+    "verifier": "0x1C033Aa9B45bdb63A18208ed0FbF0F442B5886Fd",
+    "feeToken1": "0xe1DA8919f262Ee86f9BE05059C9280142CF23f48"
+  },
+  "config": {"feePerAction": "1e16 (token 1)", "agent1Balance": "5e16", "threshold": "1e17", "autoTopUpAmount": "1e17"},
+  "alertTx": "0x813f3a5f1f85a49959258fd97a7c29d41bda5a1742a2d41ecdc753ce6051554b",
+  "alertBlock": 108038,
+  "watcherOutput": "LOW FEE BALANCE agent=1 balance=50000000000000000 threshold=100000000000000000 remaining~5 block=108038",
+  "webhookPosted": true,
+  "topUpTx": "0xba99113bebf49006caa1f9bb0200bc18d59db458cd0373d218333fb637908227",
+  "topUpBlock": 108043,
+  "topUpGasUsed": 100435,
+  "balanceAfterTopUp": "1.5e17 (low flag cleared)"
+}

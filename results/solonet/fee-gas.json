@@ -1,0 +1,61 @@
+{
+  "note": "eth_estimateGas on local Monad Solonet (chain 20143) with state overrides against the live settlement; Monad charges the gas limit, so estimate = what a sender would pay. Real SP1 Groth16 proofs, real verifier. Fee value 0.001 MON/action is illustrative; gas does not depend on it.",
+  "rows": [
+    {
+      "N": 10,
+      "scenario": "baseline: deployed pre-fee code",
+      "eth_estimateGas": 1315406,
+      "per_order": 131540.6,
+      "delta_vs_baseline": 0
+    },
+    {
+      "N": 10,
+      "scenario": "fee code, fees off (fee = 0)",
+      "eth_estimateGas": 1344975,
+      "per_order": 134497.5,
+      "delta_vs_baseline": 29569
+    },
+    {
+      "N": 10,
+      "scenario": "fee code, native fee on, 2 agents charged",
+      "eth_estimateGas": 1358877,
+      "per_order": 135887.7,
+      "delta_vs_baseline": 43471
+    },
+    {
+      "N": 10,
+      "scenario": "fee code, native fee on + 1 LowFeeBalance alert",
+      "eth_estimateGas": 1360567,
+      "per_order": 136056.7,
+      "delta_vs_baseline": 45161
+    },
+    {
+      "N": 100,
+      "scenario": "baseline: deployed pre-fee code",
+      "eth_estimateGas": 1379924,
+      "per_order": 13799.2,
+      "delta_vs_baseline": 0
+    },
+    {
+      "N": 100,
+      "scenario": "fee code, fees off (fee = 0)",
+      "eth_estimateGas": 1408841,
+      "per_order": 14088.4,
+      "delta_vs_baseline": 28917
+    },
+    {
+      "N": 100,
+      "scenario": "fee code, native fee on, 2 agents charged",
+      "eth_estimateGas": 1422743,
+      "per_order": 14227.4,
+      "delta_vs_baseline": 42819
+    },
+    {
+      "N": 100,
+      "scenario": "fee code, native fee on + 1 LowFeeBalance alert",
+      "eth_estimateGas": 1424433,
+      "per_order": 14244.3,
+      "delta_vs_baseline": 44509
+    }
+  ]
+}

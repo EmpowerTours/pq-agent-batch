@@ -92,6 +92,59 @@ Before any real batch proof existed, gas was measured with a **stand-in** verifi
 
 The real N=100 result (13,799) came in slightly below the stand-in (13,914), because the real verifier call costs 1,063,693 gas against 1,075,055 for the stand-in. The v1 contract and the stand-in harness have since been removed. They remain in git history up to commit [`361d5ec`](https://github.com/EmpowerTours/pq-agent-batch/tree/361d5ec). All raw rows are kept in [`results/history/gas-measurements.jsonl`](results/history/gas-measurements.jsonl). The values above 100 orders come from the stand-in phase and have not been re-measured with real proofs.
 
+## Payments: prepaid fees, registration, low-balance alerts
+
+Each agent pays for the actions it settles out of a **prepaid fee balance** held by the settlement contract (`contracts/src/AgentFees.sol`, which `BatchSettlementV2` inherits). Fees are handled only in the contract. The proved batch format and the digest are unchanged, and the committed real proofs still verify with fees switched on (`test/RealGroth16Fees.t.sol`).
+
+```mermaid
+sequenceDiagram
+    participant O as Agent owner (operator)
+    participant S as BatchSettlementV2 (AgentFees)
+    participant P as Prover / settlement service
+    participant W as Watcher (watcher/fee_watcher.py)
+    participant T as Treasury (multisig)
+    O->>S: depositFeeNative / depositFeeToken, setFeeAlert(threshold), setAutoTopUp(amount) + ERC20 approve
+    P->>S: feeQuote(agent, n) <= balance? (exclude short agents BEFORE proving)
+    P->>S: settle(batch, proof): charge min(n*fee, cap) per agent, once per agent
+    S-->>W: LowFeeBalance(agentId, balance, threshold) (once per crossing)
+    W->>W: print + POST WEBHOOK_URL
+    W->>S: topUp(agentId) (optional, permissionless)
+    O-->>S: exactly the configured amount, pulled from the owner's allowance
+    S->>T: sweepFees(token) (permissionless)
+```
+
+| | How it works |
+|---|---|
+| **Fee balance** | One fee account per agent, kept in one storage slot. It holds **native MON** (token 0) or one admin-listed **ERC20** such as USDC (tokens 1–3). Anyone can deposit for an agent. Only the owner (the agent's `operator` in the registry) can withdraw, switch token (only when the balance is empty), set alerts and configure top-up. |
+| **Fee per action** | The admin sets `setFeeConfig(token, feePerAction, maxFeePerBatch, enabled)`. Each agent group in a batch is charged `min(orders × feePerAction, maxFeePerBatch)`, where a cap of 0 means uncapped. The charge is summed in memory and written once per agent. Each token's config and its accrued total share one slot, so they are read once and written once per batch. |
+| **Insufficient balance** | **The whole batch reverts** with `InsufficientFeeBalance(agentId, balance, fee)`. Nothing settles for free, and nothing is skipped silently. Excluding an agent means re-proving, so the service must check `feeQuote(agentId, n)` against `feeAccount(agentId)` *before* proving and leave short agents out. `settle_proof.py` repeats this check before sending. |
+| **Withdrawals** | Two steps: `requestFeeWithdrawal` → `executeFeeWithdrawal` after `feeWithdrawDelay` (set by the admin, at most 7 days). Until then the balance still pays for batches, so an owner cannot grief a batch that is already proved by pulling funds just before settlement. The payout is `min(requested, balance at execution)`. |
+| **Treasury** | Fees accrue per token in the contract. `sweepFees(token)` is permissionless and sends them to `registry.treasury()`, which the admin sets and which is intended to be a multisig. Accrual instead of a transfer per batch means a treasury contract can never make a batch revert. |
+| **Registration** | `msg.value` = `registrationFee` (one-time, non-refundable, accrued for the treasury, swept by `sweepRegistrationFees()`) + **bond** (`stake`, at least `minStake`, refunded on `retire`). The admin can also open `selfRegister(pkHash)`, where msg.sender becomes the operator and gets the admin's default caps. `isAuthorized(agentId, pkHash)` is a one-call check for apps. |
+
+### How owners know when to top up
+- **Threshold alert.** The owner sets `setFeeAlert(agentId, threshold)`. When a settlement (or a withdrawal) takes the balance below the threshold, the contract emits `LowFeeBalance(agentId, balance, threshold)` **once**. Later batches stay quiet until the balance is back at or above the threshold (by deposit, top-up or a threshold change). The next crossing then alerts again. Setting a threshold above the current balance alerts immediately.
+- **Views.** `remainingActions(agentId)` gives a lower bound on the actions left (balance ÷ fee per action; per-batch caps can only make actions cheaper). `feeQuote(agentId, n)` gives the exact charge for an n-order batch.
+- **Auto top-up (ERC20 only).** The owner calls `setAutoTopUp(agentId, amount)` and `approve`s the settlement contract. While the agent is below its threshold, **anyone** can call `topUp(agentId)`. It pulls exactly `amount` from the address that configured it, into that agent's balance only. The ERC20 allowance caps the total that can ever be pulled, and top-ups stop once the balance is back at the threshold. Settlement itself never pulls funds, so a revoked allowance can never break a batch.
+- **Watcher.** `watcher/fee_watcher.py` polls `LowFeeBalance` logs, prints them, POSTs each alert to `WEBHOOK_URL` (Slack/Discord-style `{"text": …}` plus the raw fields) and, with `AUTO_TOPUP=1`, sends `topUp(agentId)` for agents that configured it:
+  ```bash
+  SETTLEMENT=0x... RPC=http://localhost:8080 WEBHOOK_URL=https://hooks.example/... \
+    AUTO_TOPUP=1 KEY_FILE=/path/to/keeper.key AGENTS=1,2 python3 watcher/fee_watcher.py
+  ```
+  Watching and alerting need only the Python standard library. Auto top-up also needs `eth-account`. The keeper key pays only gas. CI checks that the watcher's hard-coded selectors and topic match the compiled ABI (`watcher/check_constants.py`). I ran it end to end on Solonet: alert → webhook → `topUp` → balance restored and alert re-armed ([`results/solonet/fee-watcher-demo.json`](results/solonet/fee-watcher-demo.json)).
+
+### Gas cost of fees (real N=100 proof, Monad pricing)
+Measured with `eth_estimateGas` on Solonet against the live settlement. The committed real proofs are bound to that address, so the new code is swapped in with a **state override**: nothing is sent. The baseline reproduces the live receipts exactly. Script: [`contracts/script/measure_fee_gas.py`](contracts/script/measure_fee_gas.py). Raw data: [`results/solonet/fee-gas.json`](results/solonet/fee-gas.json).
+
+| N=100, 2 agents | Gas (charged) | Per order | Δ vs no-fee code |
+|---|---|---|---|
+| Deployed pre-fee code (baseline) | 1,379,924 | 13,799 | – |
+| Fee code, fees switched off (fee = 0) | 1,408,841 | 14,088 | +28,917 |
+| Fee code, native fee charged to both agents | 1,422,743 | **14,227** | **+42,819 (+3.1%)** |
+| …plus one `LowFeeBalance` alert | 1,424,433 | 14,244 | +44,509 |
+
+The fee path costs one cold read of each agent's fee account, one cold read of the token's config-and-accrual slot, one write per agent, one accrual write and a `FeesCharged` event. That works out to about **428 gas per order at N=100**, and the cost is per agent, not per order. Monad prices a cold storage read at 8,100 gas, and those three reads make up most of the delta. With fees off, the account reads still happen, which is why the fees-off row costs +28,917; there is no extra shortcut for that case. In forge, at Ethereum storage prices, the same settle costs 423,552 → 450,318 gas excluding intrinsic and calldata (`test/RealGroth16Fees.t.sol`).
+
 ## Repository layout
 | Path | What |
 |---|---|
@@ -100,12 +153,15 @@ The real N=100 result (13,799) came in slightly below the stand-in (13,914), bec
 | `zk-batch/script` | Host: derives 2 deterministic TEST keys, builds and signs a batch, then `--execute` (cycle count) or `--prove` (Groth16 plus fixture JSON). Also `vkey`. |
 | `zk-batch/vendor/keccak` | keccak crate patched to use SP1's keccak precompile (MIT/Apache-2.0, upstream licences included). |
 | `contracts/src/BatchSettlementV2.sol` | Settlement: one proof per batch, packed calldata, nonce replay protection, one storage slot per agent, netting against the AMM. |
-| `contracts/src/AgentRegistry.sol` | Agents with ML-DSA key commitments, stake, per-batch caps, kill switch, admin and guardian roles. |
+| `contracts/src/AgentFees.sol` | Prepaid per-agent fee balances (MON or ERC20), per-action fees with a per-batch cap, treasury accrual, low-balance alerts, permissionless top-up, delayed withdrawals. Inherited by the settlement. |
+| `contracts/src/AgentRegistry.sol` | Agents with ML-DSA key commitments, refundable bond, registration fee, optional self-registration, per-batch caps, kill switch, admin and guardian roles, treasury, `isAuthorized`. |
 | `contracts/src/dex/` | MiniAMM and MockToken (testnet only), from quantum-portfolio. |
 | `contracts/bytecode/` | SP1 v6.1.0 Groth16 verifier bytecode, byte-identical to Succinct's Monad mainnet deployment ([provenance](contracts/bytecode/README.md)). |
-| `contracts/test/` | 66 forge tests (see below). `helpers/HashBoundMockVerifier.sol` is a test-only mock and **must not be deployed**. |
+| `contracts/test/` | 64 forge tests (see below). Everything under `helpers/` (mock verifier, reentrant tokens) is test-only and **must not be deployed**. |
 | `contracts/script/DeploySolonet.s.sol` | Deploys verifier (optional), pool (optional), registry and settlement, registers the TEST agents and funds them. |
-| `contracts/script/settle_proof.py` | Settles a prove-workflow fixture on a node after pre-flight checks. |
+| `contracts/script/settle_proof.py` | Settles a prove-workflow fixture on a node after pre-flight checks, including the fee balance. |
+| `contracts/script/measure_fee_gas.py` | Measures the fee path's gas with the real proofs on Solonet (state overrides, nothing sent). |
+| `watcher/` | `fee_watcher.py`: low-fee-balance alerts → stdout / webhook / optional `topUp`. |
 | `results/` | Real proof fixtures, settlement receipts, proving stats, raw gas history ([index](results/README.md)). |
 
 ## Quickstart
@@ -117,10 +173,12 @@ forge install foundry-rs/forge-std@v1.16.1 --shallow --no-git
 forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --shallow --no-git
 forge test
 ```
-66 tests:
+64 tests:
 - `BatchSettlementV2.t.sol` (29): happy path, netting, binding, malformed-input and fuzz tests, plus a parity fixture from the Rust guest.
-- `GasProbeV2.t.sol` (30): re-runs those 29 plus a local gas probe.
+- `AgentFees.t.sol` (25): fee deduction (MON and ERC20, per-batch cap), insufficient balance rejects the whole batch, treasury accounting and sweep, registration fee + refundable bond, self-registration, alert exactly once per crossing and again after refill, top-up safety (configured amount only, allowance-bounded, no pulling for other agents), reentrancy (ERC20 hooks and native receivers), and fuzzing of fee math and solvency.
 - `RealGroth16Settle.t.sol` (7): settles the committed **real** N=10 and N=100 proofs against the real verifier bytecode, and checks that replay, tampered orders, a wrong batch id, a wrong chain and a tampered proof are all rejected.
+- `RealGroth16Fees.t.sol` (2): the same real proofs with fees on (balances, accrual, alert) and the forge gas of the fee path.
+- `GasProbeV2.t.sol` (1): a local gas probe.
 
 ### 2. Rust tests and guest execution
 ```bash
@@ -143,6 +201,7 @@ The proof is bound to `settlement`, `chain_id` and `batch_id`. Choose `nonce_bas
 ```bash
 cd contracts
 # deploys the verifier, a test pool, the registry and the settlement; registers and funds TEST agents 1 and 2
+# (optional: FEE_PER_ACTION=<wei> switches on native fees and prepays FEE_DEPOSIT, default 1 MON, per agent)
 BATCH_VKEY=$(cat path/to/vkey.txt) forge script script/DeploySolonet.s.sol \
   --rpc-url http://localhost:8080 --private-key "$(cat "$KEY_FILE")" --broadcast --slow --gas-estimate-multiplier 300
 # ...run step 3 with the printed SETTLEMENT address, download the artifact, then:
@@ -157,6 +216,8 @@ Before sending, `settle_proof.py` checks the chain id, the bound settlement addr
 - **The Monad transaction itself is still ECDSA.** ML-DSA protects the *agent's authorisation of each order*. The relayer submitting `settle()` uses a normal secp256k1 account. Anyone can relay, and a valid proof is all that is needed, so a compromised relayer cannot forge or alter orders. It can only delay or censor them.
 - **Expiry and model hash are per agent group.** Within one batch, all of an agent's orders share one expiry and one model hash. Different expiries or models need separate batches.
 - **vkey pinning.** `batchProgramVKey` is immutable. Any change to the guest (or to the toolchain that builds it) changes the vkey, and requires a new settlement deployment and new proofs. `settle_proof.py` catches a mismatch before sending.
+- **Fees.** The admin (registry admin, intended to be a multisig) can change fee rates at any time, and changes apply to the next batch. Owners can protect themselves with alerts and by keeping balances small, but withdrawals wait `feeWithdrawDelay`. Fee-on-transfer and rebasing ERC20s are not supported as fee tokens. With fees off, the fee code still adds about 29k gas per batch (cold reads). The settlement contract is now 20.8 KB, inside the 24 KB limit with about 3.8 KB to spare.
+- **Trading-balance withdrawals are still instant.** An owner can empty its *trading* balance just before a proved batch settles, which makes that batch revert (`InsufficientBalance`). The fee balance's withdrawal delay fixes this for fees only.
 - **Replay.** Per-agent nonces only; there is no batch nullifier. `batchId` is bound into the digest but is not required to be unique on chain. Batches must be settled in nonce order.
 - **Throughput of free runners.** About **200 orders** is the practical limit of one free 6-hour GitHub job. This is an estimate, from a linear fit to the two runs: ~34 min fixed plus ~1.3 min per order, plus ~10 min of setup and build. Memory peaked at ~14.9 GiB at both N=10 and N=100 (16 GB plus swap), so time is the limit, not RAM.
 - **Shared decoder.** The contract and the guest decode the packed format with identical strict rules, covered by malformed-input tests on both sides, a no-panic fuzz test and a parity fixture.
@@ -167,7 +228,8 @@ Before sending, `settle_proof.py` checks the chain id, the bound settlement addr
 - Larger batches beyond one runner: split the batch across runners and aggregate with SP1 recursion, or use a self-hosted GPU prover.
 - Per-order expiry and model hash, if it pays for its calldata.
 - Real liquidity: route the residual to a live Monad DEX, as quantum-portfolio does with Uniswap v3.
-- Relayer and watcher service: collect signed orders, trigger proving, and settle automatically.
+- Relayer and watcher service: collect signed orders, check fee balances, trigger proving, and settle automatically (the fee watcher is the first piece).
+- Proof-of-agency: model hash and limits in the registry, an `isAuthorized` API for apps, and a delay for trading-balance withdrawals.
 - A post-quantum transaction path for the relayer account, once Monad supports account abstraction or PQ signatures.
 - External audit before any mainnet value.
 
