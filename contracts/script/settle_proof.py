@@ -6,8 +6,9 @@ env:   RPC (default http://localhost:8080), SETTLEMENT (must equal the fixture's
        KEY_FILE (devnet key, never committed; default ~/.solonet-test.pk)
 
 Checks before sending: chain id, settlement address, contract vkey == fixture vkey,
-contract batchDigest(batchId, batch) == fixture digest == publicValues, and that every
-agent group's firstNonce is above the on-chain lastNonce. Then eth_estimateGas and send
+contract batchDigest(batchId, batch) == fixture digest == publicValues, that every
+agent group's firstNonce is above the on-chain lastNonce, and (fee-enabled deployments)
+that every agent's prepaid fee balance covers its fee. Then eth_estimateGas and send
 with gas limit = estimate (Monad charges the limit), and print a callTracer breakdown.
 Each settlement is appended to results/solonet/settlements.jsonl.
 """
@@ -45,6 +46,13 @@ while p < len(batch):  # nonce precondition per group
     _, _, last = call(bs, "agentState(uint32)", ["uint32"], [aid], ["uint96", "uint96", "uint64"])
     assert first > last, f"agent {aid}: firstNonce {first} <= on-chain lastNonce {last} (settle earlier batches first)"
     print(f"agent {aid}: orders {cnt}, nonces {first}..{first+cnt-1}, on-chain lastNonce {last}")
+    try:  # fee-enabled settlements: the whole batch reverts if any agent's prepaid fee balance is short
+        (fee,) = call(bs, "feeQuote(uint32,uint256)", ["uint32", "uint256"], [aid, cnt], ["uint256"])
+        bal, thr, tok, low = call(bs, "feeAccount(uint32)", ["uint32"], [aid], ["uint96", "uint96", "uint8", "bool"])
+        assert fee <= bal, f"agent {aid}: fee {fee} > prepaid fee balance {bal} (token {tok}); top up or re-batch without it"
+        if fee: print(f"  fee {fee} (token {tok}), balance {bal} -> {bal - fee}" + ("  [will cross alert threshold]" if bal - fee < thr <= bal else ""))
+    except RuntimeError:
+        pass  # pre-fee deployment (no feeQuote)
     p += 82 + cnt * 25
 print("pre-checks OK: chain, settlement, vkey, digest, nonces")
 

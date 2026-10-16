@@ -15,6 +15,8 @@ import { ISP1Verifier } from "../src/interfaces/ISP1Verifier.sol";
 ///   env (optional): VERIFIER (existing SP1 Groth16 verifier; default: deploy bytecode/sp1-verifier-groth16-v6.1.0.init.hex)
 ///                   POOL     (existing MiniAMM; default: deploy MockToken pair + MiniAMM with 250k/500k liquidity)
 ///                   PK_A, PK_B (agent pkHashes; default: the repo's deterministic TEST keys)
+///                   FEE_PER_ACTION (native MON fee per settled order; default 0 = fees off). When set, both
+///                   TEST agents also get FEE_DEPOSIT (default 1 MON) of prepaid native fee balance.
 /// Monad: broadcast with --gas-estimate-multiplier 300 (forge under-estimates Monad storage cost).
 contract DeploySolonet is Script {
     bytes32 constant TEST_PK_A = 0x8b1551c421b573beeaebb39debb1e0371e13c93155a7a5be60b29dd691095b05;
@@ -59,6 +61,13 @@ contract DeploySolonet is Script {
         q.approve(address(bs), type(uint256).max);
         bs.deposit(idA, 200_000e18, 400_000e18);
         bs.deposit(idB, 200_000e18, 400_000e18);
+        uint72 feePerAction = uint72(vm.envOr("FEE_PER_ACTION", uint256(0)));
+        if (feePerAction != 0) {
+            uint256 dep = vm.envOr("FEE_DEPOSIT", uint256(1 ether));
+            bs.setFeeConfig(0, feePerAction, 0, true);   // deployer is the registry admin
+            bs.depositFeeNative{ value: dep }(idA);
+            bs.depositFeeNative{ value: dep }(idB);
+        }
         vm.stopBroadcast();
         console.log("VERIFIER", verAddr);
         console.log("POOL", address(pool));

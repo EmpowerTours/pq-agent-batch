@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
-import { BatchSettlementV2Test } from "./BatchSettlementV2.t.sol";
+import { V2Fixture } from "./helpers/V2Fixture.sol";
 import { BatchSettlementV2 } from "../src/BatchSettlementV2.sol";
 
 /// Local (EVM-priced) marginal-gas probe used while tuning; Solonet is the real oracle.
-contract GasProbeV2 is BatchSettlementV2Test {
+contract GasProbeV2 is V2Fixture {
     function _blob(uint256 n) internal view returns (bytes memory blob) {
         uint256 half = (n + 1) / 2;
         blob = _hdr(idA, uint16(half), 1, exp, PK_A);

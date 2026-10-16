@@ -4,9 +4,9 @@ pragma solidity 0.8.28;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { ISP1Verifier } from "./interfaces/ISP1Verifier.sol";
 import { AgentRegistry } from "./AgentRegistry.sol";
+import { AgentFees } from "./AgentFees.sol";
 import { MiniAMM } from "./dex/MiniAMM.sol";
 
 /// @title  BatchSettlementV2: one SP1 Groth16 proof settles a batch of ML-DSA-65 signed agent orders
@@ -26,7 +26,11 @@ import { MiniAMM } from "./dex/MiniAMM.sol";
 /// The guest also checks sha256(pk) == group.pkHash. The public output is
 ///   abi.encode(keccak256(abi.encode(BATCH_TAG_V2, chainid, this, batchId, keccak256(batch))))
 /// so the contract hashes the batch bytes ONCE and never rebuilds per-order messages.
-contract BatchSettlementV2 is ReentrancyGuardTransient {
+///
+/// Fees (AgentFees, contract-side only; the proved batch format and digest are unchanged):
+/// each agent group is charged min(count * feePerAction, maxFeePerBatch) from the agent's
+/// prepaid fee balance; a short balance reverts the whole batch with InsufficientFeeBalance.
+contract BatchSettlementV2 is AgentFees {
     using SafeERC20 for IERC20;
 
     uint256 internal constant HEADER = 82;
@@ -45,7 +49,6 @@ contract BatchSettlementV2 is ReentrancyGuardTransient {
 
     ISP1Verifier  public immutable verifier;
     bytes32       public immutable batchProgramVKey;
-    AgentRegistry public immutable registry;
     MiniAMM       public immutable pool;
     IERC20        public immutable base;
     IERC20        public immutable quote;
@@ -65,14 +68,12 @@ contract BatchSettlementV2 is ReentrancyGuardTransient {
     error CapExceeded(uint32 agentId);
     error InsufficientBalance(uint32 agentId);
     error SlippageExceeded(uint256 index, uint256 out, uint256 minOut);
-    error NotOperator();
     error EmptyPool();
     error ZeroAmount(uint256 index);
 
-    constructor(ISP1Verifier _verifier, bytes32 _vkey, AgentRegistry _registry, MiniAMM _pool) {
+    constructor(ISP1Verifier _verifier, bytes32 _vkey, AgentRegistry _registry, MiniAMM _pool) AgentFees(_registry) {
         verifier = _verifier;
         batchProgramVKey = _vkey;
-        registry = _registry;
         pool = _pool;
         base = _pool.token0();
         quote = _pool.token1();
@@ -135,11 +136,13 @@ contract BatchSettlementV2 is ReentrancyGuardTransient {
     }
 
     /// @dev Pass 1 for one agent group: framing, registry, nonces, expiry, caps, debit IN MEMORY.
-    function _debitGroup(Cursor memory c, AgentState memory st) private view returns (uint32 id) {
+    function _debitGroup(Cursor memory c, AgentState memory st) private view returns (uint32 id, uint256 count) {
         uint256 p = c.p;
         if (p + HEADER > c.end) revert Malformed(p - c.start);
-        (uint32 gid, uint256 count, uint64 firstNonce, uint256 expiry, bytes32 pkHash) = _header(p);
-        id = gid;
+        uint64 firstNonce;
+        uint256 expiry;
+        bytes32 pkHash;
+        (id, count, firstNonce, expiry, pkHash) = _header(p);
         if (count == 0) revert Malformed(p - c.start);
         if (expiry < block.timestamp) revert Expired(c.n);
         if (uint256(firstNonce) + count - 1 > type(uint64).max) revert Malformed(p - c.start); // nonce overflow
@@ -192,6 +195,8 @@ contract BatchSettlementV2 is ReentrancyGuardTransient {
         // per-group post-debit state, kept in memory until the single write in pass 2
         AgentState[] memory st = new AgentState[](batch.length / (HEADER + ORDER));
         uint32[] memory ids = new uint32[](st.length);
+        uint256[] memory feeWord = new uint256[](st.length);   // packed post-charge fee account per group
+        FeeCtx memory fctx;
 
         // ---- pass 1
         Cursor memory c = Cursor(start, start, end, 0, 0, 0, 0);
@@ -199,7 +204,9 @@ contract BatchSettlementV2 is ReentrancyGuardTransient {
         while (c.p < end) {
             if (groups == st.length) revert Malformed(c.p - start); // unreachable for well-formed input
             st[groups] = AgentState(0, 0, 0);
-            ids[groups] = _debitGroup(c, st[groups]);
+            (uint32 gid, uint256 count) = _debitGroup(c, st[groups]);
+            ids[groups] = gid;
+            feeWord[groups] = _chargeFee(fctx, gid, count);
             unchecked { ++groups; }
         }
         uint256 totalBaseIn = c.totalBaseIn;
@@ -268,8 +275,10 @@ contract BatchSettlementV2 is ReentrancyGuardTransient {
                 s.base += SafeCast.toUint96(baseOut);   // checked cast + checked add
                 s.quote += SafeCast.toUint96(quoteOut);
                 agentState[ids[g]] = s;
+                _commitFee(ids[g], feeWord[g]);
             }
         }
+        _accrueFees(fctx, batchId);
 
         emit BatchSettled(batchId, digest, n, totalBaseIn, totalQuoteIn, ammIn, ammOut);
     }

@@ -9,6 +9,12 @@ pragma solidity 0.8.28;
 ///         key, the same `pkHash` the SP1 guest commits), a MON stake, per-batch
 ///         caps on what it can spend of each side of the market, and a kill
 ///         switch. Slashing is NOT implemented yet; stake is only escrowed.
+///
+///         Payments: registration costs a one-time, non-refundable `registrationFee` (accrued for
+///         the treasury) plus a refundable bond (`stake`, at least `minStake`, returned on
+///         retire). `treasury` (intended: a multisig) also receives the settlement's action fees.
+///         Admin may open self-registration, where anyone registers an agent for themselves with
+///         the admin's default caps.
 contract AgentRegistry {
     struct Agent {
         address operator;     // can manage its own keys, kill itself, withdraw stake once retired
@@ -28,6 +34,13 @@ contract AgentRegistry {
     mapping(uint32 => mapping(bytes32 => bool)) public isAgentKey;
     mapping(uint32 => uint32) public keyCount;
 
+    address public treasury;                 // fee recipient (registration + settlement fees)
+    uint96  public registrationFee;          // one-time, non-refundable, on top of the bond
+    uint256 public accruedRegistrationFees;  // owed to the treasury
+    bool    public openRegistration;         // anyone may selfRegister()
+    uint128 public defaultCapBaseIn;         // caps for self-registered agents
+    uint128 public defaultCapQuoteIn;
+
     event AgentRegistered(uint32 indexed agentId, address operator, bytes32 pkHash, uint96 stake);
     event KeyAdded(uint32 indexed agentId, bytes32 pkHash);
     event KeyRevoked(uint32 indexed agentId, bytes32 pkHash);
@@ -37,6 +50,11 @@ contract AgentRegistry {
     event GuardianSet(address previous, address next);
     event Slashed(uint32 indexed agentId, uint96 amount, address to);
     event Retired(uint32 indexed agentId, uint96 refund);
+    event TreasurySet(address previous, address next);
+    event RegistrationFeeSet(uint96 fee);
+    event RegistrationFeePaid(uint32 indexed agentId, uint96 fee);
+    event OpenRegistrationSet(bool open, uint128 capBaseIn, uint128 capQuoteIn);
+    event RegistrationFeesSwept(uint256 amount, address to);
 
     error NotAdmin();
     error NotAuthorised();
@@ -44,6 +62,7 @@ contract AgentRegistry {
     error AgentKilled(uint32 agentId);
     error UnknownKey(uint32 agentId, bytes32 pkHash);
     error StakeTooLow(uint256 sent, uint256 min);
+    error RegistrationClosed();
     error LastKey();
     error ZeroValue();
     error TransferFailed();
@@ -53,6 +72,7 @@ contract AgentRegistry {
         admin = _admin;
         guardian = _guardian;
         minStake = _minStake;
+        treasury = _admin;
     }
 
     modifier onlyAdmin() {
@@ -67,19 +87,41 @@ contract AgentRegistry {
 
     // ------------------------------------------------------------ registration
 
+    /// @notice msg.value = registrationFee (to treasury) + bond (>= minStake, refundable on retire).
     function registerAgent(address operator, bytes32 pkHash, uint128 capBaseIn, uint128 capQuoteIn)
         external
         payable
         onlyAdmin
         returns (uint32 id)
     {
+        return _register(operator, pkHash, capBaseIn, capQuoteIn);
+    }
+
+    /// @notice Permissionless registration (only while `openRegistration`): msg.sender becomes the
+    ///         operator, caps are the admin's defaults. Same fee + bond rule as registerAgent.
+    function selfRegister(bytes32 pkHash) external payable returns (uint32 id) {
+        if (!openRegistration) revert RegistrationClosed();
+        return _register(msg.sender, pkHash, defaultCapBaseIn, defaultCapQuoteIn);
+    }
+
+    function _register(address operator, bytes32 pkHash, uint128 capBaseIn, uint128 capQuoteIn)
+        private
+        returns (uint32 id)
+    {
         if (operator == address(0) || pkHash == bytes32(0)) revert ZeroValue();
-        if (msg.value < minStake) revert StakeTooLow(msg.value, minStake);
+        uint96 fee = registrationFee;
+        if (msg.value < uint256(minStake) + fee) revert StakeTooLow(msg.value, uint256(minStake) + fee);
+        if (msg.value - fee > type(uint96).max) revert StakeTooLow(msg.value, type(uint96).max); // bond is uint96
+        uint96 bond = uint96(msg.value - fee);
         id = ++agentCount;
-        agents[id] = Agent(operator, true, false, uint96(msg.value), capBaseIn, capQuoteIn);
+        agents[id] = Agent(operator, true, false, bond, capBaseIn, capQuoteIn);
         isAgentKey[id][pkHash] = true;
         keyCount[id] = 1;
-        emit AgentRegistered(id, operator, pkHash, uint96(msg.value));
+        if (fee != 0) {
+            accruedRegistrationFees += fee;
+            emit RegistrationFeePaid(id, fee);
+        }
+        emit AgentRegistered(id, operator, pkHash, bond);
         emit CapsSet(id, capBaseIn, capQuoteIn);
     }
 
@@ -127,6 +169,36 @@ contract AgentRegistry {
         emit Revived(id);
     }
 
+    // ------------------------------------------------------------ payments config
+
+    function setTreasury(address t) external onlyAdmin {
+        if (t == address(0)) revert ZeroValue();
+        emit TreasurySet(treasury, t);
+        treasury = t;
+    }
+
+    function setRegistrationFee(uint96 fee) external onlyAdmin {
+        registrationFee = fee;
+        emit RegistrationFeeSet(fee);
+    }
+
+    function setOpenRegistration(bool open, uint128 capBaseIn, uint128 capQuoteIn) external onlyAdmin {
+        openRegistration = open;
+        defaultCapBaseIn = capBaseIn;
+        defaultCapQuoteIn = capQuoteIn;
+        emit OpenRegistrationSet(open, capBaseIn, capQuoteIn);
+    }
+
+    /// @notice Permissionless: send accrued registration fees to the treasury.
+    function sweepRegistrationFees() external {
+        uint256 amt = accruedRegistrationFees;
+        accruedRegistrationFees = 0;
+        address to = treasury;
+        emit RegistrationFeesSwept(amt, to);
+        (bool ok,) = payable(to).call{ value: amt }("");
+        if (!ok) revert TransferFailed();
+    }
+
     function setGuardian(address g) external onlyAdmin {
         if (g == address(0)) revert ZeroValue();
         emit GuardianSet(guardian, g);
@@ -172,6 +244,12 @@ contract AgentRegistry {
         if (a.killed) revert AgentKilled(id);
         if (!isAgentKey[id][pkHash]) revert UnknownKey(id, pkHash);
         return (a.capBaseIn, a.capQuoteIn);
+    }
+
+    /// @notice For apps: is `pkHash` a current key of a live (registered, not killed) agent?
+    function isAuthorized(uint32 id, bytes32 pkHash) external view returns (bool) {
+        Agent storage a = agents[id];
+        return a.active && !a.killed && isAgentKey[id][pkHash];
     }
 
     /// @notice Reverts unless `pkHash` is a currently authorised key of agent `id`.

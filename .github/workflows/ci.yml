@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   forge:
-    name: Foundry tests (settlement, fuzz, real Groth16 proofs)
+    name: Foundry tests (settlement, fees, fuzz, real Groth16 proofs)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,8 @@ jobs:
       - name: forge test
         working-directory: contracts
         run: forge test -vv
+      - name: Watcher constants match the compiled ABI
+        run: python3 watcher/check_constants.py
 
   cargo:
     name: Rust parser tests (agent-batch-lib)
