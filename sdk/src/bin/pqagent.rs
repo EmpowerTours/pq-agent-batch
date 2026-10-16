@@ -134,7 +134,8 @@ enum Cmd {
         expiry: Option<u32>,
         #[arg(long, default_value_t = 3600)]
         ttl: u64,
-        /// output file (default: stdout); directories get <agentId>-<nonce>.json
+        /// output file (default: stdout); a directory (existing, or a new path ending in / or without a
+        /// .json extension, which is created) gets <agentId>-<nonce>.json
         #[arg(long, short)]
         out: Option<PathBuf>,
     },
@@ -302,7 +303,10 @@ fn run(cli: Cli) -> Result<()> {
             match out {
                 None => print!("{js}"),
                 Some(p) => {
-                    let path = if p.is_dir() { p.join(format!("{:06}-{:012}.json", s.agent_id, s.nonce)) } else { p.clone() };
+                    let as_dir = p.is_dir() || (!p.exists()
+                        && (p.as_os_str().to_string_lossy().ends_with('/') || p.extension().map_or(true, |e| e != "json")));
+                    if as_dir { std::fs::create_dir_all(p)?; }
+                    let path = if as_dir { p.join(format!("{:06}-{:012}.json", s.agent_id, s.nonce)) } else { p.clone() };
                     std::fs::write(&path, js)?;
                     if !cli.json {
                         println!("signed agent {} nonce {} expiry {} {} {} (minOut {}) -> {}", s.agent_id, s.nonce, s.expiry,

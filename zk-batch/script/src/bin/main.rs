@@ -168,7 +168,8 @@ fn main() {
             "digest": format!("0x{}", hex::encode(expected)),
             "batch": format!("0x{}", hex::encode(&batch)),
             "n": n, "chainId": a.chain_id, "settlement": format!("0x{}", hex::encode(settlement)), "batchId": a.batch_id, "nonceBase": a.nonce_base,
-            "note": "Real SP1 Groth16 proof of the zk-batch v2 guest over a batch signed with deterministic TEST keys.",
+            "note": if a.input.is_some() { "Real SP1 Groth16 proof of the zk-batch v2 guest over a prepared batch (--input, e.g. signed by SDK-registered agents)." } else { "Real SP1 Groth16 proof of the zk-batch v2 guest over a batch signed with deterministic TEST keys." },
+            "input": a.input.clone(),
         });
         std::fs::write(format!("{}/groth16-batch-fixture.json", a.proof_dir),
             serde_json::to_string_pretty(&fixture).unwrap()).unwrap();

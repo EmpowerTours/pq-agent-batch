@@ -29,6 +29,10 @@ on:
         description: "Nonce base: agent 1's first nonce = base+1, agent 2's = base+ceil(N/2)+1 (must exceed on-chain lastNonce)"
         required: true
         default: "0"
+      batch_input:
+        description: "Optional: repo path of a committed batch-input.json (sdk `pqagent batch` output). When set, the host runs with --input and n/settlement/chain_id/batch_id/nonce_base are ignored."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -44,6 +48,20 @@ jobs:
       SP1_WORKER_NUM_CORE_WORKERS: "1"
       SP1_WORKER_NUM_RECURSION_PROVER_WORKERS: "1"
     steps:
+      - name: Resolve batch mode
+        env:
+          BATCH_INPUT: ${{ inputs.batch_input }}
+        run: |
+          if [ -n "$BATCH_INPUT" ]; then
+            case "$BATCH_INPUT" in /*|*..*) echo "batch_input must be a relative repo path"; exit 1;; esac
+            echo "BATCH_INPUT_PATH=$GITHUB_WORKSPACE/$BATCH_INPUT" >> "$GITHUB_ENV"
+            echo "BATCH_ARGS=--input $GITHUB_WORKSPACE/$BATCH_INPUT" >> "$GITHUB_ENV"
+            echo "ARTIFACT=groth16-input-$(basename "$(dirname "$BATCH_INPUT")")" >> "$GITHUB_ENV"
+          else
+            echo "BATCH_ARGS=-n ${{ inputs.n }} --chain-id ${{ inputs.chain_id }} --settlement ${{ inputs.settlement }} --batch-id ${{ inputs.batch_id }} --nonce-base ${{ inputs.nonce_base }}" >> "$GITHUB_ENV"
+            echo "ARTIFACT=groth16-batch-n${{ inputs.n }}-b${{ inputs.batch_id }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Free disk space
         run: |
           df -h
@@ -84,8 +102,8 @@ jobs:
         working-directory: zk-batch
         run: |
           ./target/release/vkey | tee vkey.txt
-          ./target/release/batch --execute -n "${{ inputs.n }}" --chain-id "${{ inputs.chain_id }}" \
-            --settlement "${{ inputs.settlement }}" --batch-id "${{ inputs.batch_id }}" --nonce-base "${{ inputs.nonce_base }}" | grep -E "RESULT|exit_code|^N="
+          test -z "${BATCH_INPUT_PATH:-}" || test -f "$BATCH_INPUT_PATH"
+          ./target/release/batch --execute $BATCH_ARGS | grep -E "RESULT|exit_code|^N=|--input"
 
       - name: Prove (Groth16, local CPU prover)
         working-directory: zk-batch
@@ -93,8 +111,8 @@ jobs:
           mkdir -p proof-out
           cp vkey.txt proof-out/
           ( while true; do sleep 300; echo "[mem $(date -u +%H:%M)] $(free -m | awk '/Mem/{print "ram used "$3"M"} /Swap/{print "swap used "$3"M"}' | tr '\n' ' ')"; done ) &
-          /usr/bin/time -v ./target/release/batch --prove -n "${{ inputs.n }}" --chain-id "${{ inputs.chain_id }}" \
-            --settlement "${{ inputs.settlement }}" --batch-id "${{ inputs.batch_id }}" --nonce-base "${{ inputs.nonce_base }}" \
+          test -z "${BATCH_INPUT_PATH:-}" || cp "$BATCH_INPUT_PATH" proof-out/batch-input.json
+          /usr/bin/time -v ./target/release/batch --prove $BATCH_ARGS \
             --proof-dir proof-out --out proof-out/batch.json 2>&1 | tee proof-out/prove.log
           test "${PIPESTATUS[0]}" = "0"
 
@@ -102,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: groth16-batch-n${{ inputs.n }}-b${{ inputs.batch_id }}
+          name: ${{ env.ARTIFACT }}
           path: |
             zk-batch/proof-out/
           if-no-files-found: warn
