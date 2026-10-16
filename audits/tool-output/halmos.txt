@@ -1,0 +1,542 @@
+Compiling 56 files with Solc 0.8.28
+Solc 0.8.28 finished in 35.88s
+Compiler run successful!
+warning[unused-return]: return value of an external call is not used
+    ╭▸ src/AgentFees.sol:118:9
+    │
+118 │         (operator, active,,,,) = registry.agents(id);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/unused-return
+
+warning[divide-before-multiply]: division before multiplication may lose precision
+    ╭▸ src/dex/MiniAMM.sol:108:31
+    │
+108 │             liquidity = _sqrt(amount0 * amount1);
+    │                               ━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/divide-before-multiply
+
+warning[divide-before-multiply]: division before multiplication may lose precision
+    ╭▸ src/dex/MiniAMM.sol:113:28
+    │
+113 │             uint256 liq0 = (amount0 * _totalSupply) / r0;
+    │                            ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/divide-before-multiply
+
+warning[divide-before-multiply]: division before multiplication may lose precision
+    ╭▸ src/dex/MiniAMM.sol:114:28
+    │
+114 │             uint256 liq1 = (amount1 * _totalSupply) / r1;
+    │                            ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/divide-before-multiply
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/dex/MiniAMM.sol:224:21
+    │
+224 │         _reserve0 = uint112(b0);
+    │                     ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint112' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/dex/MiniAMM.sol:225:21
+    │
+225 │         _reserve1 = uint112(b1);
+    │                     ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint112' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unused-return]: return value of an external call is not used
+    ╭▸ src/BatchSettlementV2.sol:120:35
+    │
+120 │         (address operator,,,,,) = registry.agents(agentId);
+    │                                   ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/unused-return
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:188:26
+    │
+188 │         uint64 readyAt = uint64(block.timestamp) + feeWithdrawDelay;
+    │                          ━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint64' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentFees.sol:202:13
+    │
+202 │         if (block.timestamp < w.readyAt) revert WithdrawalNotReady(w.readyAt);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[arbitrary-send-erc20]: `transferFrom` uses an arbitrary `from`; require it to equal `msg.sender` or `address(this)`
+    ╭▸ src/AgentFees.sol:293:9
+    │
+293 │         token.safeTransferFrom(from, address(this), amount);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/arbitrary-send-erc20
+
+warning[arbitrary-send-eth]: ETH is sent to a user-controlled destination; restrict the destination or the caller
+    ╭▸ src/AgentFees.sol:301:26
+    │
+301 │             (bool ok,) = payable(to).call{ value: amt }("");
+    │                          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/arbitrary-send-eth
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+    ╭▸ src/AgentRegistry.sol:104:28
+    │
+104 │     function transferAdmin(address next) external onlyAdmin {
+    │                            ━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:350:22
+    │
+350 │         uint96 bal = uint96(w);
+    │                      ━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:351:22
+    │
+351 │         uint96 thr = uint96(w >> 96);
+    │                      ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:355:51
+    │
+355 │             feeAccount[id] = FeeAccount(bal, thr, uint8(w >> 192), true);
+    │                                                   ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint8' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:357:51
+    │
+357 │             feeAccount[id] = FeeAccount(bal, thr, uint8(w >> 192), low);
+    │                                                   ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint8' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/AgentFees.sol:382:36
+    │
+382 │         if (x > type(uint104).max) revert AmountTooLarge();
+    │                                    ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:378:16
+    │
+378 │         return uint96(x);
+    │                ━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentFees.sol:383:16
+    │
+383 │         return uint104(x);
+    │                ━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint104' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/BatchSettlementV2.sol:144:14
+    │
+144 │         id = uint32(w >> 224);
+    │              ━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/BatchSettlementV2.sol:146:22
+    │
+146 │         firstNonce = uint64(w >> 144);
+    │                      ━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint64' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/AgentRegistry.sol:148:23
+    │
+148 │         uint96 bond = uint96(msg.value - fee);
+    │                       ━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/BatchSettlementV2.sol:179:13
+    │
+179 │             emit GroupSkipped(batchId, gid, err);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/BatchSettlementV2.sol:216:33
+    │
+216 │                 if (flags == 1) agentQuoteIn += amountIn;
+    │                                 ━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/BatchSettlementV2.sol:217:22
+    │
+217 │                 else agentBaseIn += amountIn;
+    │                      ━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/BatchSettlementV2.sol:226:13
+    │
+226 │         if (expiry < block.timestamp) return (id, count, abi.encodeWithSelector(Expired.selector, nBefore));
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:214:32
+    │
+214 │                 if (flags > 1) revert Malformed(q - c.start);
+    │                                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:215:36
+    │
+215 │                 if (amountIn == 0) revert ZeroAmount(c.n + (q - p) / ORDER);
+    │                                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/BatchSettlementV2.sol:242:30
+    │
+242 │         st.base = cur.base - uint96(agentBaseIn);          // < cur.base, so the cast is exact
+    │                              ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/BatchSettlementV2.sol:243:32
+    │
+243 │         st.quote = cur.quote - uint96(agentQuoteIn);
+    │                                ━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/BatchSettlementV2.sol:244:37
+    │
+244 │         st.lastNonce = firstNonce + uint64(count) - 1;     // >= 1 since firstNonce > lastNonce >= 0
+    │                                     ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint64' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[arbitrary-send-eth]: ETH is sent to a user-controlled destination; restrict the destination or the caller
+    ╭▸ src/AgentRegistry.sol:231:22
+    │
+231 │         (bool ok,) = payable(to).call{ value: amt }("");
+    │                      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/arbitrary-send-eth
+
+warning[reentrancy-no-eth]: external call can be reentered before `agentState` is updated
+    ╭▸ src/BatchSettlementV2.sol:295:17
+    │
+295 │                 pool.swap(0, ammOut, address(this));
+    │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-no-eth
+
+warning[reentrancy-no-eth]: external call can be reentered before `agentState` is updated
+    ╭▸ src/BatchSettlementV2.sol:303:17
+    │
+303 │                 pool.swap(ammOut, 0, address(this));
+    │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-no-eth
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/BatchSettlementV2.sol:268:17
+    │
+268 │             if (groups == st.length) revert Malformed(c.p - start); // unreachable for well-formed input
+    │                 ━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/BatchSettlementV2.sol:336:29
+    │
+336 │ …                     quoteOut += out;
+    │                       ━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/BatchSettlementV2.sol:333:29
+    │
+333 │ …                     baseOut += out;
+    │                       ━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/BatchSettlementV2.sol:322:25
+    │
+322 │                         i += (qEnd - p - HEADER) / ORDER;
+    │                         ━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[calls-loop]: external call inside a loop
+    ╭▸ src/BatchSettlementV2.sol:227:54
+    │
+227 │         (uint8 status, uint128 capB, uint128 capQ) = registry.agentStatus(id, pkHash);
+    │                                                      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/calls-loop
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/AgentFees.sol:354:13
+    │
+354 │             emit LowFeeBalance(id, bal, thr);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/AgentFees.sol:367:17
+    │
+367 │                 emit FeesCharged(batchId, t, amt);
+    │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/BatchSettlementV2.sol:353:9
+    │
+353 │         emit BatchSettled(batchId, digest, c.settled, totalBaseIn, totalQuoteIn, ammIn, ammOut);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:268:38
+    │
+268 │             if (groups == st.length) revert Malformed(c.p - start); // unreachable for well-formed input
+    │                                      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:193:33
+    │
+193 │         if (p + HEADER > c.end) revert Malformed(p - c.start);
+    │                                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:198:25
+    │
+198 │         if (count == 0) revert Malformed(p - c.start);
+    │                         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:199:65
+    │
+199 │         if (uint256(firstNonce) + count - 1 > type(uint64).max) revert Malformed(p - c.start); // nonce overflow
+    │                                                                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:200:29
+    │
+200 │         if (id <= c.prevId) revert OrdersNotGrouped(c.n);
+    │                             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:202:40
+    │
+202 │         if (p + count * ORDER > c.end) revert Malformed(p - c.start);
+    │                                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/BatchSettlementV2.sol:339:43
+    │
+339 │                         if (out < minOut) revert SlippageExceeded(i + (q - p - HEADER) / ORDER, out, minOut);
+    │                                           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[environment-read-across-mutation]: `block.timestamp` may be reused across `vm.warp`
+    ╭▸ test/AgentFees.t.sol:309:94
+    │
+309 │         vm.expectRevert(abi.encodeWithSelector(AgentFees.WithdrawalNotReady.selector, uint64(block.timestamp + 1 days)));
+    │                                                                                              ━━━━━━━━━━━━━━━
+    ‡
+312 │         vm.warp(block.timestamp + 1 days);
+    │         ───────────────────────────────── `vm.warp` changes this environment here
+    │
+    ├ help: capture it with `vm.getBlockTimestamp()` instead
+    ╰ help: https://getfoundry.sh/forge/linting/environment-read-across-mutation
+
+warning[environment-read-across-mutation]: `block.timestamp` may be reused across `vm.warp`
+    ╭▸ test/AgentFees.t.sol:312:17
+    │
+312 │         vm.warp(block.timestamp + 1 days);
+    │         ────────━━━━━━━━━━━━━━━────────── `vm.warp` changes this environment here
+    │
+    ├ help: capture it with `vm.getBlockTimestamp()` instead
+    ╰ help: https://getfoundry.sh/forge/linting/environment-read-across-mutation
+
+WARNING  Skipped VmContractHelper47.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper52.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper49.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper52.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper46.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper49.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper52.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper56.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper51.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper57.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+WARNING  Skipped VmContractHelper48.json due to parsing failure: KeyError: 'ast'
+         (see https://github.com/a16z/halmos/wiki/warnings#parsing-error)       
+
+Running 5 tests for test/audit/Halmos.t.sol:HalmosAudit
+[PASS] check_agentStatusMatchesIsAuthorized(bytes32,bool,bool,bytes32,uint32) 
+(paths: 21, time: 0.50s, bounds: [])
+[PASS] check_bondsOnlyLeaveViaAdmin(address) (paths: 53, time: 0.62s, bounds: 
+[])
+[PASS] check_feeQuoteBounded(uint72,uint72,uint16) (paths: 8, time: 0.13s, 
+bounds: [])
+[PASS] check_onlyOperatorWithdraws(address,uint96,address) (paths: 4, time: 
+0.04s, bounds: [])
+[PASS] check_singleOrderSettle(uint64,bool,uint64,uint64,uint64) (paths: 109, 
+time: 2.82s, bounds: [])
+Symbolic test result: 5 passed; 0 failed; time: 4.39s
+

@@ -1,0 +1,38 @@
+Compiling 37 files with Solc 0.8.28
+Solc 0.8.28 finished in 4.68s
+Compiler run successful!
+Script ran successfully.
+
+== Return ==
+reg: contract AgentRegistry 0x2387b3383E89c164781d173B7Aa14d9c46eD2642
+bs: contract BatchSettlementV2 0x22bc2df58D96CBc5f2599f2C25D1E565974749EE
+
+== Logs ==
+  NOTE: new MiniAMM is EMPTY; seed liquidity before any agent trades
+  POOL 0x9B137463d4E7986D7f535f9B79e28b4EF1938E9b
+  REGISTRY 0x2387b3383E89c164781d173B7Aa14d9c46eD2642
+  SETTLEMENT 0x22bc2df58D96CBc5f2599f2C25D1E565974749EE
+  PENDING ADMIN (must acceptAdmin) 0xFeEf24A5dBF43E9dE8AC0d0EaB0f0141E980A52c
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 143
+
+Estimated max fee per gas: 202.000000001 gwei
+Estimated base fee per gas: 100 gwei
+Estimated max priority fee per gas: 2.000000001 gwei
+
+Estimated total gas used for script: 11540096
+
+Estimated amount required: 2.331099392011540096 MON
+
+==========================
+
+SIMULATION COMPLETE. To broadcast these transactions, add --broadcast and wallet configuration(s) to the previous command. See forge script --help for more.
+
+Transactions saved to: /workspace/pq-agent-batch/contracts/broadcast/DeployMainnetLimited.s.sol/143/dry-run/run-latest.json
+
+Sensitive values saved to: /workspace/pq-agent-batch/contracts/cache/DeployMainnetLimited.s.sol/143/dry-run/run-latest.json
+

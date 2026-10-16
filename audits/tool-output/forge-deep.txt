@@ -1,0 +1,144 @@
+No files changed, compilation skipped
+
+Ran 1 test for test/GasProbeV2.t.sol:GasProbeV2
+[PASS] test_probe_marginal() (gas: 551060)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 4.60ms (1.44ms CPU time)
+
+Ran 1 test for test/audit/Invariants.t.sol:InvariantsSmokeTest
+[PASS] test_handlerSettlesSkipsAndReplays() (gas: 1687628)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 7.21ms (2.40ms CPU time)
+
+Ran 2 tests for test/RealGroth16Fees.t.sol:RealGroth16FeesTest
+[PASS] test_RealProofs_FeesOff_N100Gas() (gas: 843048)
+[PASS] test_RealProofs_WithNativeFees_N100Gas() (gas: 1163395)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 11.96ms (16.07ms CPU time)
+
+Ran 7 tests for test/RealGroth16Settle.t.sol:RealGroth16SettleTest
+[PASS] test_RealProof_ReplayRejected() (gas: 465449)
+[PASS] test_RealProof_TamperedOrderRejected() (gas: 322719)
+[PASS] test_RealProof_TamperedProofRejected() (gas: 1008224750)
+[PASS] test_RealProof_WrongBatchIdRejected() (gas: 322525)
+[PASS] test_RealProof_WrongChainRejected() (gas: 323001)
+[PASS] test_RealProofs_N10_then_N100() (gas: 907966)
+[PASS] test_VerifierIsSp1V610Groth16() (gas: 13034)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 18.57ms (30.43ms CPU time)
+
+Ran 16 tests for test/audit/AuditFixes.t.sol:AuditFixesTest
+[PASS] testFuzz_CapsEnforcedPerBatch(uint128,uint128,uint96,uint96,uint96) (runs: 50000, μ: 166528, ~: 148448)
+[PASS] testFuzz_ResidualNeverBricks(uint96,uint96) (runs: 50000, μ: 205251, ~: 205270)
+[PASS] test_DomainSeparation_DigestBindsChainAndContract() (gas: 30114)
+[PASS] test_L02_FeeOnTransferFeeTokenRejected() (gas: 1059786)
+[PASS] test_L02_FeeOnTransferTradingTokenRejected() (gas: 899535)
+[PASS] test_L03_DepositToUnregisteredIdRejected() (gas: 98241)
+[PASS] test_L04_TwoStepAdminTransfer() (gas: 258163)
+[PASS] test_L05_ConstructorRejectsBadWiring() (gas: 8772)
+[PASS] test_L06_DustResidualDoesNotRevert() (gas: 125798)
+[PASS] test_L07_ZeroAddressPayoutsRejected() (gas: 111271)
+[PASS] test_M01_BadProofStillRevertsEvenWithSkips() (gas: 132613)
+[PASS] test_M01_ExpiredGroupSkippedOthersSettle() (gas: 153826)
+[PASS] test_M01_RevokedKeyAfterProvingOnlySkipsGriefer() (gas: 268474)
+[PASS] test_M01_SelfKillAfterProvingOnlySkipsGriefer() (gas: 194727)
+[PASS] test_M01_SkippedGroupSettlesOnResubmitOnlyOnce() (gas: 491174)
+[PASS] test_M01_WithdrawAfterProvingOnlySkipsGriefer() (gas: 310836)
+Suite result: ok. 16 passed; 0 failed; 0 skipped; finished in 16.70s (19.95s CPU time)
+
+Ran 25 tests for test/AgentFees.t.sol:AgentFeesTest
+[PASS] testFuzz_FeeMathAndSolvency(uint72,uint72,uint8,uint8,uint96,uint96) (runs: 50000, μ: 441237, ~: 461617)
+[PASS] testFuzz_SequenceSolvency(uint256) (runs: 50000, μ: 616539, ~: 632720)
+[PASS] test_FeeAdminOnly() (gas: 193239)
+[PASS] test_FeeCapPerBatch() (gas: 386097)
+[PASS] test_FeeDeduction_ERC20_And_ZeroFeeNative() (gas: 521941)
+[PASS] test_FeeDeduction_Native_TwoAgents() (gas: 359002)
+[PASS] test_InsufficientFeeBalance_SkipsOnlyThatGroup() (gas: 488788)
+[PASS] test_LowBalanceEmittedOncePerCrossing() (gas: 976697)
+[PASS] test_PartialRefillBelowThresholdDoesNotRearm() (gas: 488041)
+[PASS] test_Reentrancy_NativeWithdrawalBlocked() (gas: 1224881)
+[PASS] test_Reentrancy_SettleFromTokenHookBlocked() (gas: 1903851)
+[PASS] test_Reentrancy_TopUpTokenCannotReenter() (gas: 1793682)
+[PASS] test_RegistrationFeeAndRefundableBond() (gas: 401852)
+[PASS] test_RemainingActionsView() (gas: 133053)
+[PASS] test_SelectTokenRequiresEmptyAccount() (gas: 181061)
+[PASS] test_SelfRegistration() (gas: 612897)
+[PASS] test_SetAlertAboveBalanceAlertsImmediately() (gas: 157229)
+[PASS] test_TopUp_AfterSettlementCrossing() (gas: 637670)
+[PASS] test_TopUp_CannotExceedAllowance() (gas: 413774)
+[PASS] test_TopUp_CannotPullForOtherAgents() (gas: 648614)
+[PASS] test_TopUp_DisabledAndNativeRejected() (gas: 183641)
+[PASS] test_TopUp_PullsConfiguredAmountOnlyWhenLow() (gas: 637899)
+[PASS] test_TreasuryAccountingAndSweep() (gas: 507447)
+[PASS] test_UnfundedAgentRejectedWhenFeesOn() (gas: 101228)
+[PASS] test_WithdrawalDelayAndMinBalance() (gas: 546116)
+Suite result: ok. 25 passed; 0 failed; 0 skipped; finished in 16.87s (29.63s CPU time)
+
+Ran 29 tests for test/BatchSettlementV2.t.sol:BatchSettlementV2Test
+[PASS] testFuzz_AnyByteFlipRejected(uint256,uint8) (runs: 50000, μ: 95985, ~: 101635)
+[PASS] testFuzz_RandomBlobNeverPanics(bytes) (runs: 50000, μ: 48973, ~: 48756)
+[PASS] testFuzz_WellFormedBatchesSolvent(uint256,uint8,uint8) (runs: 50000, μ: 234158, ~: 233291)
+[PASS] test_BatchIdIsBound() (gas: 100287)
+[PASS] test_CapExceededRejected() (gas: 282530)
+[PASS] test_DepositOverflowReverts() (gas: 55104)
+[PASS] test_DuplicateOrDescendingAgentGroupsRejected() (gas: 149053)
+[PASS] test_EmptyBatchRejected() (gas: 31480)
+[PASS] test_ExcessQuoteGoesToAmm() (gas: 220960)
+[PASS] test_ExpiredRejected() (gas: 55357)
+[PASS] test_ExpiryIsBound() (gas: 100573)
+[PASS] test_GuestParityFixture() (gas: 204245)
+[PASS] test_HappyPath_TwoAgents() (gas: 242331)
+[PASS] test_InsufficientBalanceRejected() (gas: 119313)
+[PASS] test_KilledAgentRejected_ByGuardian() (gas: 496168)
+[PASS] test_MalformedEncodingsRejected() (gas: 417450)
+[PASS] test_ModelHashIsBound() (gas: 100991)
+[PASS] test_NonceGapAllowedAndAdvances() (gas: 142289)
+[PASS] test_NonceOverflowRejected() (gas: 51738)
+[PASS] test_ReplaySingleAgentGroupRejected() (gas: 340647)
+[PASS] test_ReplayedBatchRejected() (gas: 233938)
+[PASS] test_ReplayedOrdersUnderNewBatchIdRejected() (gas: 247496)
+[PASS] test_RevokedKeyRejected() (gas: 165122)
+[PASS] test_SlippageRejected() (gas: 111208)
+[PASS] test_TamperedAmountRejected() (gas: 101161)
+[PASS] test_UnregisteredAgentRejected() (gas: 61555)
+[PASS] test_UnregisteredKeyRejected() (gas: 63930)
+[PASS] test_WithdrawOnlyOperator() (gas: 123854)
+[PASS] test_ZeroAmountRejected() (gas: 52526)
+Suite result: ok. 29 passed; 0 failed; 0 skipped; finished in 16.87s (37.46s CPU time)
+
+Ran 1 test for test/audit/Invariants.t.sol:InvariantsTest
+[PASS]
+InvariantsTest invariants:
+[PASS] invariant_bondsConserved
+[PASS] invariant_feeConservation
+[PASS] invariant_noViolations
+[PASS] invariant_tradingSolvent
+[PASS] invariant_zz_coverageProbe
+ InvariantsTest invariants (runs: 1000, calls: 500000, reverts: 0)
+
+╭-------------------+-------------+-------+---------+----------╮
+| Contract          | Selector    | Calls | Reverts | Discards |
++==============================================================+
+| SettlementHandler | deposit     | 41474 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | depositFee  | 41507 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | kill        | 41703 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | replay      | 41434 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | revive      | 41703 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | setCaps     | 41784 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | setFee      | 41843 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | settle      | 83678 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | sweep       | 41534 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | withdraw    | 41744 | 0       | 0        |
+|-------------------+-------------+-------+---------+----------|
+| SettlementHandler | withdrawFee | 41596 | 0       | 0        |
+╰-------------------+-------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 173.94s (173.94s CPU time)
+
+Ran 8 test suites in 173.96s (224.42s CPU time): 82 tests passed, 0 failed, 0 skipped (82 total tests)
+DONE

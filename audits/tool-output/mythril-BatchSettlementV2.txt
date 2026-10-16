@@ -1,0 +1,724 @@
+==== requirement violation ====
+SWC ID: 123
+Severity: Medium
+Contract: MAIN
+Function name: fallback
+PC address: 431
+Estimated Gas Usage: 870 - 965
+A requirement was violated in a nested call and the call was reverted as a result.
+Make sure valid inputs are provided to the nested call (for instance, via passed arguments).
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [ATTACKER], function: unknown, txdata: 0x06ccdd6400000000000000000000000000000000000000000000000000000000000000400000000000000000000000000040002000000000000000000000000004000010, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x06ccdd64
+PC address: 704
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x096a4ac9
+PC address: 1420
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x10390dfa
+PC address: 2456
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: pool()
+PC address: 3051
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x19716a40
+PC address: 3161
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x1fc3277d
+PC address: 3218
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x21bfdb51
+PC address: 3278
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x22c8a6b7
+PC address: 3382
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x28f76110
+PC address: 3471
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: verifier()
+PC address: 3598
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x301f565e
+PC address: 3778
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x396ecb91
+PC address: 3885
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x49529db0
+PC address: 6263
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x49e2b903
+PC address: 6736
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: base()
+PC address: 7053
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x5463597e
+PC address: 7223
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x64d41efb
+PC address: 7853
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x6991ef96
+PC address: 7923
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x6ed1b7d7
+PC address: 8080
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x70a28102
+PC address: 8492
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x798cfec8
+PC address: 8656
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: registry()
+PC address: 8793
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x7d8a5604
+PC address: 8903
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x8425771c
+PC address: 8992
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x93fe922e
+PC address: 9074
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x9727a6ce
+PC address: 9866
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0x999b93af
+PC address: 9954
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xa172108a
+PC address: 10066
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xba1f2af0
+PC address: 10211
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xba2b37a3
+PC address: 10617
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xc521a284
+PC address: 11291
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xc7193505
+PC address: 11291
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xdc6a8a58
+PC address: 11745
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xecc4828b
+PC address: 12041
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xfa1f3eaa
+PC address: 12900
+Estimated Gas Usage: 3102 - 4519
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [SOMEGUY], function: unknown, txdata: 0xc521a2840000000000000000000000000000000000000000000000000000000000000000800000002000000000000000000000000000010800000000000000000020010d, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xfa714088
+PC address: 13277
+Estimated Gas Usage: 1230 - 5139
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [ATTACKER], function: unknown, txdata: 0x301f565e000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000101010101010101010101010101010101010101010101010001010101010102, decoded_data: , value: 0x0
+
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: MAIN
+Function name: _function_0xfa898226
+PC address: 13425
+Estimated Gas Usage: 1230 - 5139
+The arithmetic operator can overflow.
+It is possible to cause an integer overflow or underflow in the arithmetic operation. 
+--------------------
+Initial State:
+
+Account: [ATTACKER], balance: 0x0, nonce:0, storage:{}
+Account: [SOMEGUY], balance: 0x0, nonce:0, storage:{}
+
+Transaction Sequence:
+
+Caller: [ATTACKER], function: unknown, txdata: 0x301f565e000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000101010101010101010101010101010101010101010101010001010101010102, decoded_data: , value: 0x0
+
+
+EXIT 1

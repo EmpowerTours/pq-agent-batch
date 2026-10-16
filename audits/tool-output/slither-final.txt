@@ -1,0 +1,60 @@
+'forge clean' running (wd: /workspace/pq-agent-batch/contracts)
+'forge config --json' running
+'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /workspace/pq-agent-batch/contracts)
+INFO:Detectors:
+Detector: missing-zero-check
+AgentRegistry.transferAdmin(address).next (src/AgentRegistry.sol#104) lacks a zero-check on :
+		- pendingAdmin = next (src/AgentRegistry.sol#105)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Detector: calls-loop
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#188-246) has external calls inside a loop: (status,capB,capQ) = registry.agentStatus(id,pkHash) (src/BatchSettlementV2.sol#228)
+	Calls stack containing the loop:
+		BatchSettlementV2.settle(uint64,bytes,bytes)
+		BatchSettlementV2._pass1Group(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState[],uint32[],uint256[],AgentFees.FeeCtx,uint256,uint64)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+INFO:Detectors:
+Detector: timestamp
+AgentFees.executeFeeWithdrawal(uint32) (src/AgentFees.sol#200-211) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < w.readyAt (src/AgentFees.sol#203)
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#188-246) uses timestamp for comparisons
+	Dangerous comparisons:
+	- expiry < block.timestamp (src/BatchSettlementV2.sol#227)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: assembly
+BatchSettlementV2._header(uint256) (src/BatchSettlementV2.sol#135-149) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#141-144)
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#188-246) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#212)
+BatchSettlementV2.settle(uint64,bytes,bytes) (src/BatchSettlementV2.sol#253-358) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#259)
+	- INLINE ASM (src/BatchSettlementV2.sol#278)
+	- INLINE ASM (src/BatchSettlementV2.sol#332)
+BatchSettlementV2._word(uint256) (src/BatchSettlementV2.sol#361-363) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#362)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+INFO:Detectors:
+Detector: cyclomatic-complexity
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#188-246) has a high cyclomatic complexity (12).
+BatchSettlementV2.settle(uint64,bytes,bytes) (src/BatchSettlementV2.sol#253-358) has a high cyclomatic complexity (16).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+INFO:Detectors:
+Detector: low-level-calls
+Low level call in AgentFees._send(uint8,address,uint256) (src/AgentFees.sol#299-307):
+	- (ok,None) = address(to).call{value: amt}() (src/AgentFees.sol#302)
+Low level call in AgentRegistry.sweepRegistrationFees() (src/AgentRegistry.sol#226-234):
+	- (ok,None) = address(to).call{value: amt}() (src/AgentRegistry.sol#232)
+Low level call in AgentRegistry.slash(uint32,uint96,address) (src/AgentRegistry.sol#245-251):
+	- (ok,None) = to.call{value: amount}() (src/AgentRegistry.sol#249)
+Low level call in AgentRegistry.retire(uint32) (src/AgentRegistry.sol#254-263):
+	- (ok,None) = address(a.operator).call{value: refund}() (src/AgentRegistry.sol#261)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+INFO:Detectors:
+Detector: unindexed-event-address
+Event AgentRegistry.GuardianSet(address,address) (src/AgentRegistry.sol#53) has address parameters but no indexed parameters
+Event AgentRegistry.TreasurySet(address,address) (src/AgentRegistry.sol#56) has address parameters but no indexed parameters
+Event AgentRegistry.RegistrationFeesSwept(uint256,address) (src/AgentRegistry.sol#60) has address parameters but no indexed parameters
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unindexed-event-address-parameters
+INFO:Slither:. analyzed (22 contracts with 102 detectors), 17 result(s) found

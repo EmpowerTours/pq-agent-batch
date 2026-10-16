@@ -28,6 +28,50 @@ jobs:
       - name: Watcher constants match the compiled ABI
         run: python3 watcher/check_constants.py
 
+  slither:
+    name: Slither (fails on any untriaged medium/high finding)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.5
+      - name: Install pinned contract dependencies
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std@v1.16.1 --shallow --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --shallow --no-git
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: slither (triage in audits/REPORT.md; suppressions are inline slither-disable comments)
+        working-directory: contracts
+        run: |
+          pip install slither-analyzer==0.11.6
+          slither . --filter-paths "lib/|test/|script/|src/dex/MockToken.sol" --exclude-dependencies --fail-medium
+
+  halmos:
+    name: Halmos symbolic checks (audit properties)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.5
+      - name: Install pinned contract dependencies
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std@v1.16.1 --shallow --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --shallow --no-git
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: halmos
+        working-directory: contracts
+        run: |
+          pip install halmos==0.3.3
+          halmos --match-contract HalmosAudit --solver-timeout-assertion 60000 --loop 4
+
   cargo:
     name: Rust parser tests (agent-batch-lib)
     runs-on: ubuntu-latest

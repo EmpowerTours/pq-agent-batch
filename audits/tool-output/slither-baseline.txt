@@ -1,0 +1,135 @@
+'forge clean' running (wd: /workspace/pq-agent-batch/contracts)
+'forge config --json' running
+'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /workspace/pq-agent-batch/contracts)
+INFO:Detectors:
+Detector: arbitrary-send-erc20
+AgentFees.topUp(uint32) (src/AgentFees.sol#227-238) uses arbitrary from in transferFrom: IERC20(feeToken[a.token]).safeTransferFrom(cfg.from,address(this),cfg.amount) (src/AgentFees.sol#233)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#arbitrary-from-in-transferfrom
+INFO:Detectors:
+Detector: arbitrary-send-eth
+AgentRegistry.sweepRegistrationFees() (src/AgentRegistry.sol#198-205) sends eth to arbitrary user
+	Dangerous calls:
+	- (ok,None) = address(to).call{value: amt}() (src/AgentRegistry.sol#203)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+INFO:Detectors:
+Detector: divide-before-multiply
+MiniAMM.addLiquidity(uint256,uint256,address) (src/dex/MiniAMM.sol#82-121) performs a multiplication on the result of a division:
+	- amount0Optimal = (amount1Desired * r0) / r1 (src/dex/MiniAMM.sol#98)
+	- amount0 = amount0Optimal (src/dex/MiniAMM.sol#99)
+	- liq0 = (amount0 * _totalSupply) / r0 (src/dex/MiniAMM.sol#113)
+MiniAMM.addLiquidity(uint256,uint256,address) (src/dex/MiniAMM.sol#82-121) performs a multiplication on the result of a division:
+	- amount0Optimal = (amount1Desired * r0) / r1 (src/dex/MiniAMM.sol#98)
+	- amount0 = amount0Optimal (src/dex/MiniAMM.sol#99)
+	- liquidity = _sqrt(amount0 * amount1) (src/dex/MiniAMM.sol#108)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+INFO:Detectors:
+Detector: incorrect-equality
+MiniAMM.addLiquidity(uint256,uint256,address) (src/dex/MiniAMM.sol#82-121) uses a dangerous strict equality:
+	- r0 == 0 && r1 == 0 (src/dex/MiniAMM.sol#88)
+MiniAMM.quoteToken0Out(uint256) (src/dex/MiniAMM.sol#188-195) uses a dangerous strict equality:
+	- r0 == 0 || r1 == 0 || amountIn == 0 (src/dex/MiniAMM.sol#190)
+MiniAMM.quoteToken1Out(uint256) (src/dex/MiniAMM.sol#178-185) uses a dangerous strict equality:
+	- r0 == 0 || r1 == 0 || amountIn == 0 (src/dex/MiniAMM.sol#180)
+MiniAMM.removeLiquidity(uint256,address) (src/dex/MiniAMM.sol#124-140) uses a dangerous strict equality:
+	- amount0 == 0 || amount1 == 0 (src/dex/MiniAMM.sol#134)
+MiniAMM.swap(uint256,uint256,address) (src/dex/MiniAMM.sol#146-175) uses a dangerous strict equality:
+	- amount0In == 0 && amount1In == 0 (src/dex/MiniAMM.sol#161)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+INFO:Detectors:
+Detector: reentrancy-no-eth
+Reentrancy in BatchSettlementV2.settle(uint64,bytes,bytes) (src/BatchSettlementV2.sol#186-284):
+	External calls:
+	- pool.swap(0,ammOut,address(this)) (src/BatchSettlementV2.sol#232)
+	- pool.swap(ammOut,0,address(this)) (src/BatchSettlementV2.sol#239)
+	State variables written after the call(s):
+	- agentState[ids[g]] = s (src/BatchSettlementV2.sol#277)
+	BatchSettlementV2.agentState (src/BatchSettlementV2.sol#56) can be used in cross function reentrancies:
+	- BatchSettlementV2.agentState (src/BatchSettlementV2.sol#56)
+	- _commitFee(ids[g],feeWord[g]) (src/BatchSettlementV2.sol#278)
+		- feeAccount[id] = FeeAccount(bal,thr,uint8(w >> 192),true) (src/AgentFees.sol#337)
+		- feeAccount[id] = FeeAccount(bal,thr,uint8(w >> 192),low) (src/AgentFees.sol#339)
+	AgentFees.feeAccount (src/AgentFees.sol#68) can be used in cross function reentrancies:
+	- AgentFees._storeAccount(uint32,AgentFees.FeeAccount) (src/AgentFees.sol#277-283)
+	- AgentFees.feeAccount (src/AgentFees.sol#68)
+	- AgentFees.feeQuote(uint32,uint256) (src/AgentFees.sol#248-252)
+	- AgentFees.remainingActions(uint32) (src/AgentFees.sol#256-260)
+	- AgentFees.selectFeeToken(uint32,uint8) (src/AgentFees.sol#159-166)
+	- AgentFees.setFeeAlert(uint32,uint96) (src/AgentFees.sol#209-215)
+	- _accrueFees(fctx,batchId) (src/BatchSettlementV2.sol#281)
+		- c.accrued = SafeCastU96.u104(uint256(c.accrued) + amt) (src/AgentFees.sol#348)
+	AgentFees.feeConfig (src/AgentFees.sol#67) can be used in cross function reentrancies:
+	- AgentFees.accruedFees(uint8) (src/AgentFees.sol#243-245)
+	- AgentFees.feeConfig (src/AgentFees.sol#67)
+	- AgentFees.feeQuote(uint32,uint256) (src/AgentFees.sol#248-252)
+	- AgentFees.remainingActions(uint32) (src/AgentFees.sol#256-260)
+	- AgentFees.selectFeeToken(uint32,uint8) (src/AgentFees.sol#159-166)
+	- AgentFees.setFeeConfig(uint8,uint72,uint72,bool) (src/AgentFees.sol#135-140)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+INFO:Detectors:
+Detector: unused-return
+AgentFees._operator(uint32) (src/AgentFees.sol#114-116) ignores return value by (operator,active,None,None,None,None) = registry.agents(id) (src/AgentFees.sol#115)
+BatchSettlementV2.withdraw(uint32,uint96,uint96,address) (src/BatchSettlementV2.sol#97-107) ignores return value by (operator,None,None,None,None,None) = registry.agents(agentId) (src/BatchSettlementV2.sol#98)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+INFO:Detectors:
+Detector: missing-zero-check
+AgentRegistry.slash(uint32,uint96,address).to (src/AgentRegistry.sol#216) lacks a zero-check on :
+		- (ok,None) = to.call{value: amount}() (src/AgentRegistry.sol#219)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Detector: calls-loop
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#139-182) has external calls inside a loop: (capB,capQ) = registry.checkAgent(id,pkHash) (src/BatchSettlementV2.sol#174)
+	Calls stack containing the loop:
+		BatchSettlementV2.settle(uint64,bytes,bytes)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+INFO:Detectors:
+Detector: timestamp
+AgentFees.executeFeeWithdrawal(uint32) (src/AgentFees.sol#195-206) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < w.readyAt (src/AgentFees.sol#198)
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#139-182) uses timestamp for comparisons
+	Dangerous comparisons:
+	- expiry < block.timestamp (src/BatchSettlementV2.sol#147)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: assembly
+BatchSettlementV2._header(uint256) (src/BatchSettlementV2.sol#111-125) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#117-120)
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#139-182) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#159)
+BatchSettlementV2.settle(uint64,bytes,bytes) (src/BatchSettlementV2.sol#186-284) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#192)
+	- INLINE ASM (src/BatchSettlementV2.sol#258)
+BatchSettlementV2._word(uint256) (src/BatchSettlementV2.sol#286-288) uses assembly
+	- INLINE ASM (src/BatchSettlementV2.sol#287)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+INFO:Detectors:
+Detector: cyclomatic-complexity
+BatchSettlementV2._debitGroup(BatchSettlementV2.Cursor,BatchSettlementV2.AgentState) (src/BatchSettlementV2.sol#139-182) has a high cyclomatic complexity (14).
+BatchSettlementV2.settle(uint64,bytes,bytes) (src/BatchSettlementV2.sol#186-284) has a high cyclomatic complexity (12).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+INFO:Detectors:
+Detector: low-level-calls
+Low level call in AgentFees._send(uint8,address,uint256) (src/AgentFees.sol#285-293):
+	- (ok,None) = address(to).call{value: amt}() (src/AgentFees.sol#288)
+Low level call in AgentRegistry.sweepRegistrationFees() (src/AgentRegistry.sol#198-205):
+	- (ok,None) = address(to).call{value: amt}() (src/AgentRegistry.sol#203)
+Low level call in AgentRegistry.slash(uint32,uint96,address) (src/AgentRegistry.sol#216-221):
+	- (ok,None) = to.call{value: amount}() (src/AgentRegistry.sol#219)
+Low level call in AgentRegistry.retire(uint32) (src/AgentRegistry.sol#224-233):
+	- (ok,None) = address(a.operator).call{value: refund}() (src/AgentRegistry.sol#231)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+INFO:Detectors:
+Detector: naming-convention
+Variable MockToken._DECIMALS (src/dex/MockToken.sol#14) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+INFO:Detectors:
+Detector: unindexed-event-address
+Event AgentRegistry.GuardianSet(address,address) (src/AgentRegistry.sol#50) has address parameters but no indexed parameters
+Event AgentRegistry.TreasurySet(address,address) (src/AgentRegistry.sol#53) has address parameters but no indexed parameters
+Event AgentRegistry.RegistrationFeesSwept(uint256,address) (src/AgentRegistry.sol#57) has address parameters but no indexed parameters
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unindexed-event-address-parameters
+INFO:Detectors:
+Detector: immutable-states
+AgentRegistry.admin (src/AgentRegistry.sol#28) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+INFO:Slither:. analyzed (22 contracts with 102 detectors), 31 result(s) found
